@@ -1,0 +1,6 @@
+make.exe --dry-run --keep-going --print-directory
+make: Entering directory '/f/1.projects/1.phao_hoa_esp8266/220415/nonos/esp8266_project/mcu_libs_BitsCat'
+make: Leaving directory '/f/1.projects/1.phao_hoa_esp8266/220415/nonos/esp8266_project/mcu_libs_BitsCat'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+
