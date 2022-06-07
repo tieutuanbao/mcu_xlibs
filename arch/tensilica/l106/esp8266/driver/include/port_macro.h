@@ -1,7 +1,6 @@
 #ifndef __PORT_H
 #define __PORT_H
 
-#include "stdlib.h"
 #include "c_types.h"
 #include "ets_sys.h"
 #include "osapi.h"

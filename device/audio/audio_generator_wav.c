@@ -2,7 +2,7 @@
 #include "osapi.h"
 #include <string.h>
 
-void VAR_ON_FLASH audio_gen_wav_openfile(audio_gen_wav_t *dev, uint8_t *file_buf) {
+void FUNC_ON_FLASH audio_gen_wav_openfile(audio_gen_wav_t *dev, uint8_t *file_buf) {
     dev->file_ptr = file_buf;
     /* Lấy dữ liệu từ file */
     dev->num_channel = *((uint16_t *)(file_buf + 22));      // Vị trí Sample rate
@@ -12,7 +12,7 @@ void VAR_ON_FLASH audio_gen_wav_openfile(audio_gen_wav_t *dev, uint8_t *file_buf
     dev->read_curr_ptr = (file_buf + 44);        // Vị trí data
 }
 
-void VAR_ON_FLASH audio_gen_wav_begin(audio_gen_wav_t *dev, void *driver) {
+void FUNC_ON_FLASH audio_gen_wav_begin(audio_gen_wav_t *dev, void *driver) {
     dev->running = true;
     dev->busy = false;
     dev->read_curr_ptr = dev->file_ptr + 44;
@@ -22,7 +22,7 @@ void VAR_ON_FLASH audio_gen_wav_begin(audio_gen_wav_t *dev, void *driver) {
     dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bit_per_sample);
 }
 
-bool VAR_ON_FLASH audio_get_next_data(audio_gen_wav_t *dev) {
+bool FUNC_ON_FLASH audio_get_next_data(audio_gen_wav_t *dev) {
     uint32_t max_sample = (((dev->file_ptr + 44) + dev->file_size) - dev->read_curr_ptr) / (dev->num_channel * (dev->bit_per_sample / 8));
     if(max_sample > 256) max_sample = 256;
     else if(max_sample == 0) return false;
@@ -39,10 +39,10 @@ bool VAR_ON_FLASH audio_get_next_data(audio_gen_wav_t *dev) {
     return true;
 }
 
-bool VAR_ON_FLASH audio_gen_wav_is_running(audio_gen_wav_t *dev) {
+bool FUNC_ON_FLASH audio_gen_wav_is_running(audio_gen_wav_t *dev) {
     return dev->running;
 }
-void VAR_ON_FLASH audio_gen_wav_loop(audio_gen_wav_t *dev) {
+void FUNC_ON_FLASH audio_gen_wav_loop(audio_gen_wav_t *dev) {
     if (dev->driver->consume_sample(dev->driver, dev->last_sample) == false) {
         dev->busy = true;
         return;
