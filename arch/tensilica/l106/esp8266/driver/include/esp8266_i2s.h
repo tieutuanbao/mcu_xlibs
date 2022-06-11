@@ -1,87 +1,137 @@
-/* 
-  i2s.h - Software I2S library for esp8266
+/* esp/i2s_regs.h
+ *
+ * ESP8266 I2S register definitions
+ *
+ * Not compatible with ESP SDK register access code.
+ */
 
-  Copyright (c) 2015 Hristo Gochkov. All rights reserved.
-  This file is part of the esp8266 core for Arduino environment.
- 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+#ifndef _ESP_I2S_REGS_H
+#define _ESP_I2S_REGS_H
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+#include "esp/types.h"
+#include "common_macros.h"
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-#ifndef __ESP8266_I2S_H
-#define __ESP8266_I2S_H
+#define I2S_BASE 0x60000e00
+#define I2S (*(struct I2S_REGS *)I2S_BASE)
 
+typedef struct struct_i2s{
+    volatile uint32_t txfifo;           // 0x00
+    volatile uint32_t rxfifo;           // 0x04
+    volatile uint32_t conf;             // 0x08
+    volatile uint32_t int_raw;          // 0x0c
+    volatile uint32_t int_status;       // 0x10
+    volatile uint32_t int_enable;       // 0x14
+    volatile uint32_t int_clear;        // 0x18
+    volatile uint32_t timing;           // 0x1c
+    volatile uint32_t fifo_conf;        // 0x20
+    volatile uint32_t rx_eof_num;       // 0x24
+    volatile uint32_t conf_single_data; // 0x28
+    volatile uint32_t conf_channels;    // 0x2c
+} i2s_t;
 
-/*
-How does this work? Basically, to get sound, you need to:
-- Connect an I2S codec to the I2S pins on the ESP.
-- Start up a thread that's going to do the sound output
-- Call i2s_set_bits() if you want to enable 24-bit mode
-- Call i2s_begin()
-- Call i2s_set_rate() with the sample rate you want.
-- Generate sound and call i2s_write_sample() with 32-bit samples.
-The 32bit samples basically are 2 16-bit signed values (the analog values for
-the left and right channel) concatenated as (Rout<<16)+Lout
+_Static_assert(sizeof(struct I2S_REGS) == 0x30, "I2S_REGS is the wrong size");
 
-i2s_write_sample will block when you're sending data too quickly, so you can just
-generate and push data as fast as you can and i2s_write_sample will regulate the
-speed.
-*/
+/* Details for CONF register */
 
-#include "port_macro.h"
+#define I2S_CONF_BCK_DIV_M      0x0000003f
+#define I2S_CONF_BCK_DIV_S      22
+#define I2S_CONF_CLKM_DIV_M     0x0000003f
+#define I2S_CONF_CLKM_DIV_S     16
+#define I2S_CONF_BITS_MOD_M     0x0000000f
+#define I2S_CONF_BITS_MOD_S     12
+#define I2S_CONF_RX_MSB_SHIFT   BIT(11)
+#define I2S_CONF_TX_MSB_SHIFT   BIT(10)
+#define I2S_CONF_RX_START       BIT(9)
+#define I2S_CONF_TX_START       BIT(8)
+#define I2S_CONF_MSB_RIGHT      BIT(7)
+#define I2S_CONF_RIGHT_FIRST    BIT(6)
+#define I2S_CONF_RX_SLAVE_MOD   BIT(5)
+#define I2S_CONF_TX_SLAVE_MOD   BIT(4)
+#define I2S_CONF_RX_FIFO_RESET  BIT(3)
+#define I2S_CONF_TX_FIFO_RESET  BIT(2)
+#define I2S_CONF_RX_RESET       BIT(1)
+#define I2S_CONF_TX_RESET       BIT(0)
+#define I2S_CONF_RESET_MASK     0xf
 
-/* Number of buffers in the I2S circular buffer */
-#define SLC_BUF_CNT     4
-/* Length of one buffer, in 32-bit words */
-#define SLC_BUF_LEN     256
+/* Details for INT_RAW register */
 
-#define I2S_HAS_BEGIN_RXTX_DRIVE_CLOCKS 1
+#define I2S_INT_RAW_TX_REMPTY    BIT(5)
+#define I2S_INT_RAW_TX_WFULL     BIT(4)
+#define I2S_INT_RAW_RX_REMPTY    BIT(3)
+#define I2S_INT_RAW_RX_WFULL     BIT(2)
+#define I2S_INT_RAW_TX_PUT_DATA  BIT(1)
+#define I2S_INT_RAW_RX_TAKE_DATA BIT(0)
 
-typedef struct {
-    uint32_t sample_rate;
-    uint8_t bits_per_sample;
-    uint8_t number_channel;
-} i2s_config_t;
+/* Details for INT_STATUS register */
 
-bool ICACHE_FLASH_ATTR i2s_set_bits(int bits); // Set bits per sample, only 16 or 24 supported.  Call before begin.
-// Note that in 24 bit mode each sample must be left-aligned (i.e. 0x00000000 .. 0xffffff00) as the
-// hardware shifts starting at bit 31, not bit 23.
+#define I2S_INT_STATUS_TX_REMPTY     BIT(5)
+#define I2S_INT_STATUS_TX_WFULL      BIT(4)
+#define I2S_INT_STATUS_RX_REMPTY     BIT(3)
+#define I2S_INT_STATUS_RX_WFULL      BIT(2)
+#define I2S_INT_STATUS_TX_PUT_DATA   BIT(1)
+#define I2S_INT_STATUS_RX_TAKE_DATA  BIT(0)
 
-void ICACHE_FLASH_ATTR i2s_begin(); // Enable TX only, for compatibility
-bool ICACHE_FLASH_ATTR i2s_rxtx_begin(bool enableRx, bool enableTx); // Allow TX and/or RX, returns false on OOM error
-bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool driveRxClocks, bool driveTxClocks);
-void ICACHE_FLASH_ATTR i2s_end();
-void ICACHE_FLASH_ATTR i2s_set_rate(uint32_t rate);//Sample Rate in Hz (ex 44100, 48000)
-void ICACHE_FLASH_ATTR i2s_set_dividers(uint8_t div1, uint8_t div2);//Direct control over output rate
-float ICACHE_FLASH_ATTR i2s_get_real_rate();//The actual Sample Rate on output
-bool ICACHE_FLASH_ATTR i2s_write_sample(uint32_t sample);//32bit sample with channels being upper and lower 16 bits (blocking when DMA is full)
-bool ICACHE_FLASH_ATTR i2s_write_sample_nb(uint32_t sample);//same as above but does not block when DMA is full and returns false instead
-bool ICACHE_FLASH_ATTR i2s_write_lr(int16_t left, int16_t right);//combines both channels and calls i2s_write_sample with the result
-bool ICACHE_FLASH_ATTR i2s_read_sample(int16_t *left, int16_t *right, bool blocking); // RX data returned in both 16-bit outputs.
-bool ICACHE_FLASH_ATTR i2s_is_full();//returns true if DMA is full and can not take more bytes (overflow)
-bool ICACHE_FLASH_ATTR i2s_is_empty();//returns true if DMA is empty (underflow)
-bool ICACHE_FLASH_ATTR i2s_rx_is_full();
-bool ICACHE_FLASH_ATTR i2s_rx_is_empty();
-uint16_t ICACHE_FLASH_ATTR i2s_available();// returns the number of samples than can be written before blocking
-uint16_t ICACHE_FLASH_ATTR i2s_rx_available();// returns the number of samples than can be written before blocking
-void ICACHE_FLASH_ATTR i2s_set_callback(void (*callback) (void));
-void ICACHE_FLASH_ATTR i2s_rx_set_callback(void (*callback) (void));
+/* Details for INT_ENABLE register */
 
-// writes a buffer of frames into the DMA memory, returns the amount of frames written
-// A frame is just a int16_t for mono, for stereo a frame is two int16_t, one for each channel.
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono(const int16_t *frames, uint16_t frame_count);
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono_nb(const int16_t *frames, uint16_t frame_count);
-uint16_t i2s_write_buffer(const int16_t *frames, uint16_t frame_count);
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_nb(const int16_t *frames, uint16_t frame_count);
+#define I2S_INT_ENABLE_TX_REMPTY     BIT(5)
+#define I2S_INT_ENABLE_TX_WFULL      BIT(4)
+#define I2S_INT_ENABLE_RX_REMPTY     BIT(3)
+#define I2S_INT_ENABLE_RX_WFULL      BIT(2)
+#define I2S_INT_ENABLE_TX_PUT_DATA   BIT(1)
+#define I2S_INT_ENABLE_RX_TAKE_DATA  BIT(0)
 
-#endif
+/* Details for INT_CLEAR register */
+
+#define I2S_INT_CLEAR_TX_REMPTY     BIT(5)
+#define I2S_INT_CLEAR_TX_WFULL      BIT(4)
+#define I2S_INT_CLEAR_RX_REMPTY     BIT(3)
+#define I2S_INT_CLEAR_RX_WFULL      BIT(2)
+#define I2S_INT_CLEAR_TX_PUT_DATA   BIT(1)
+#define I2S_INT_CLEAR_RX_TAKE_DATA  BIT(0)
+
+/* Details for TIMING register */
+
+#define I2S_TIMING_TX_BCK_IN_INV       BIT(22)
+#define I2S_TIMING_RX_DSYNC_SW         BIT(21)
+#define I2S_TIMING_TX_DSYNC_SW         BIT(20)
+#define I2S_TIMING_RX_BCK_OUT_DELAY_M  0x00000003
+#define I2S_TIMING_RX_BCK_OUT_DELAY_S  18
+#define I2S_TIMING_RX_WS_OUT_DELAY_M   0x00000003
+#define I2S_TIMING_RX_WS_OUT_DELAY_S   16
+#define I2S_TIMING_TX_SD_OUT_DELAY_M   0x00000003
+#define I2S_TIMING_TX_SD_OUT_DELAY_S   14
+#define I2S_TIMING_TX_WS_OUT_DELAY_M   0x00000003
+#define I2S_TIMING_TX_WS_OUT_DELAY_S   12
+#define I2S_TIMING_TX_BCK_OUT_DELAY_M  0x00000003
+#define I2S_TIMING_TX_BCK_OUT_DELAY_S  10
+#define I2S_TIMING_RX_SD_IN_DELAY_M    0x00000003
+#define I2S_TIMING_RX_SD_IN_DELAY_S    8
+#define I2S_TIMING_RX_WS_IN_DELAY      0x00000003
+#define I2S_TIMING_RX_WS_IN_DELAY_S    6
+#define I2S_TIMING_RX_BCK_IN_DELAY_M   0x00000003
+#define I2S_TIMING_RX_BCK_IN_DELAY_S   4
+#define I2S_TIMING_TX_WS_IN_DELAY_M    0x00000003
+#define I2S_TIMING_TX_WS_IN_DELAY_S    2
+#define I2S_TIMING_TX_BCK_IN_DELAY_M   0x00000003
+#define I2S_TIMING_TX_BCK_IN_DELAY_S   0
+
+/* Details for FIFO_CONF register */
+
+#define I2S_FIFO_CONF_RX_FIFO_MOD_M      0x00000007
+#define I2S_FIFO_CONF_RX_FIFO_MOD_S      16
+#define I2S_FIFO_CONF_TX_FIFO_MOD_M      0x00000007
+#define I2S_FIFO_CONF_TX_FIFO_MOD_S      13
+#define I2S_FIFO_CONF_DESCRIPTOR_ENABLE  BIT(12)
+#define I2S_FIFO_CONF_TX_DATA_NUM_M      0x0000003f
+#define I2S_FIFO_CONF_TX_DATA_NUM_S      6
+#define I2S_FIFO_CONF_RX_DATA_NUM_M      0x0000003f
+#define I2S_FIFO_CONF_RX_DATA_NUM_S      0
+
+/* Details for CONF_CHANNEL register */
+
+#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_M  0x00000003
+#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_S  3
+#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_M  0x00000007
+#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_S  0
+
+#endif /* _ESP_I2S_REGS_H */

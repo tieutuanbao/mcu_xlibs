@@ -1,68 +1,179 @@
+/**
+ * @file esp8266_gpio.c
+ * @author Tieu Tuan Bao (tieutuanbao@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-04-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#include "port_macro.h"
 #include "esp8266_gpio.h"
-#include "esp8266_peri.h"
+#include "esp8266_rtc.h"
+#include "esp8266_iomux.h"
+#include "esp8266_interrupt.h"
 
-volatile uint32_t* const esp8266_gpioToFn[16] = { &GPF0, &GPF1, &GPF2, &GPF3, &GPF4, &GPF5, &GPF6, &GPF7, &GPF8, &GPF9, &GPF10, &GPF11, &GPF12, &GPF13, &GPF14, &GPF15 };
+/**
+ * @brief Mảng handler gpio
+ * 
+ */
+static gpio_int_handler_t gpio_intr_handlers[16] = { 0 };
 
-void ICACHE_FLASH_ATTR esp_gpio_config(uint8_t gpio_pin, gpio_mode_t gpio_mode) {
-    if (gpio_pin < 16) {
-        if (gpio_mode == GPIO_MODE_SPECIAL) {
-            GPC(gpio_pin) = (GPC(gpio_pin) & (0xF << GPCI));    // SOURCE(GPIO) | DRIVER(NORMAL) | INT_TYPE(UNCHANGED) | WAKEUP_ENABLE(DISABLED)
-            GPEC = (1 << gpio_pin);                             // Disable
-            GPF(gpio_pin) = GPFFS(GPFFS_BUS(gpio_pin));         // Set gpio_mode to BUS (RX0, TX0, TX1, SPI, HSPI or CLK depending in the gpio_pin)
-            if (gpio_pin == 3){
-                GPF(gpio_pin) |= (1 << GPFPU);                  // enable pullup on RX
-            }
-        }
-        else if (gpio_mode & GPIO_MODE_F0) {
-            GPC(gpio_pin) = (GPC(gpio_pin) & (0xF << GPCI));    // SOURCE(GPIO) | DRIVER(NORMAL) | INT_TYPE(UNCHANGED) | WAKEUP_ENABLE(DISABLED)
-            GPEC = (1 << gpio_pin);                             // Disable
-            GPF(gpio_pin) = GPFFS((gpio_mode >> 4) & 0x07);
-            if (gpio_pin == 13 && gpio_mode == GPIO_MODE_F4) {
-                GPF(gpio_pin) |= (1 << GPFPU);                  // enable pullup on RX
-            }
-        }
-        else if (gpio_mode == GPIO_MODE_OUT_PP || gpio_mode == GPIO_MODE_OUT_OD) {
-            GPF(gpio_pin) = GPFFS(GPFFS_GPIO(gpio_pin));        // Set gpio_mode to GPIO
-            GPC(gpio_pin) = (GPC(gpio_pin) & (0xF << GPCI));    // SOURCE(GPIO) | DRIVER(NORMAL) | INT_TYPE(UNCHANGED) | WAKEUP_ENABLE(DISABLED)
-            if (gpio_mode == GPIO_MODE_OUT_OD) {
-                GPC(gpio_pin) |= (1 << GPCD);
-            }
-            GPES = (1 << gpio_pin); // Enable
-        }
-        else if (gpio_mode == GPIO_MODE_IN || gpio_mode == GPIO_MODE_IPU) {
-            GPF(gpio_pin) = GPFFS(GPFFS_GPIO(gpio_pin));                   // Set gpio_mode to GPIO
-            GPEC = (1 << gpio_pin);                                        // Disable
-            GPC(gpio_pin) = (GPC(gpio_pin) & (0xF << GPCI)) | (1 << GPCD); // SOURCE(GPIO) | DRIVER(OPEN_DRAIN) | INT_TYPE(UNCHANGED) | WAKEUP_ENABLE(DISABLED)
-            if (gpio_mode == GPIO_MODE_IPU) {
-                GPF(gpio_pin) |= (1 << GPFPU); // Enable  Pullup
-            }
-        }
-        else if (gpio_mode == GPIO_MODE_WPU || gpio_mode == GPIO_MODE_WPD) {
-            GPF(gpio_pin) = GPFFS(GPFFS_GPIO(gpio_pin)); // Set gpio_mode to GPIO
-            GPEC = (1 << gpio_pin);                      // Disable
-            if (gpio_mode == GPIO_MODE_WPU)
-            {
-                GPF(gpio_pin) |= (1 << GPFPU);                            // Enable  Pullup
-                GPC(gpio_pin) = (1 << GPCD) | (4 << GPCI) | (1 << GPCWE); // SOURCE(GPIO) | DRIVER(OPEN_DRAIN) | INT_TYPE(LOW) | WAKEUP_ENABLE(ENABLED)
-            }
-            else
-            {
-                GPF(gpio_pin) |= (1 << GPFPD);                            // Enable  Pulldown
-                GPC(gpio_pin) = (1 << GPCD) | (5 << GPCI) | (1 << GPCWE); // SOURCE(GPIO) | DRIVER(OPEN_DRAIN) | INT_TYPE(HIGH) | WAKEUP_ENABLE(ENABLED)
+/**
+ * @brief Hàm phục vụ ngắt GPIO
+ * 
+ */
+void __attribute__((weak)) FUNC_ON_RAM gpio_int_isr(void *arg) {
+    gpio_int_handler_t handler;
+    uint8_t idx_gpio;
+    /* Lấy tín hiệu ngắt các IO */
+    uint32_t status_reg = GPIO.status;
+    GPIO.status_clear = status_reg;
+    /* Kiểm tra tín hiệu ngắt từng GPIO */
+    for(idx_gpio = 0; idx_gpio < 16; idx_gpio++){
+        if((status_reg & (1U << idx_gpio)) != 0){
+            /* reset cờ ngắt */
+            status_reg &= ~(1U << idx_gpio);
+            if (GPIO.pin[idx_gpio].val & GPIO_CONF_INTTYPE_MASK) {
+                handler = gpio_intr_handlers[idx_gpio];
+                if (handler) {
+                    handler(idx_gpio);
+                }
             }
         }
     }
-    else if (gpio_pin == 16) {
-        GPF16 = GP16FFS(GPFFS_GPIO(gpio_pin)); // Set gpio_mode to GPIO
-        GPC16 = 0;
-        if (gpio_mode == GPIO_MODE_IN || gpio_mode == GPIO_MODE_IPD16) {
-            if (gpio_mode == GPIO_MODE_IPD16) {
-                GPF16 |= (1 << GP16FPD); // Enable Pulldown
+}
+
+/**
+ * @brief Hàm cấu hình ngắt GPIO
+ * 
+ * @param gpio_num Index của GPIO
+ * @param int_type Chọn kiểu ngắt GPIO
+ * @param handler Handler khi có sự kiện ngắt
+ */
+void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler) {
+    /* Config handler */
+    gpio_intr_handlers[gpio_num] = handler;
+
+    GPIO.pin[gpio_num].val = GPIO.pin[gpio_num].val | (int_type << GPIO_CONF_INTTYPE_POS);
+    if (int_type != GPIO_INT_DISABLE) {
+        register_interrupts(INT_NUM_GPIO, gpio_int_isr, NULL);
+        enable_interrupts(1<<INT_NUM_GPIO);
+    }
+}
+
+void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction) {
+    if (gpio_num == 16) {
+        RTC.gpio_cfg[3] = (RTC.gpio_cfg[3] & 0xffffffbc) | 1;
+        RTC.gpio_conf = (RTC.gpio_conf & 0xfffffffe) | 0;
+        switch (direction) {
+            case GPIO_DIR_INPUT:{
+                RTC.gpio_enable = (RTC.gpio_out & 0xfffffffe);
+                break;
             }
-            GP16E &= ~1;
+            case GPIO_DIR_OUTPUT:
+            case GPIO_DIR_OPEN_DRAIN:{
+                RTC.gpio_enable = (RTC.gpio_out & 0xfffffffe) | 1;
+                break;
+            }
         }
-        else if (gpio_mode == GPIO_MODE_OUT_PP) {
-            GP16E |= 1;
+        return;
+    }
+    switch (direction) {
+        case GPIO_DIR_INPUT:{
+            GPIO.enable_out_clear = (1U << gpio_num);
+            iomux_set_gpio_function(gpio_num, false);
+            break;
+        }
+        case GPIO_DIR_OUTPUT:{
+            GPIO.pin[gpio_num].driver = 0;
+            GPIO.enable_out_set = (1U << gpio_num);
+            iomux_set_gpio_function(gpio_num, true);
+            break;
+        }
+        case GPIO_DIR_OPEN_DRAIN:{
+            GPIO.pin[gpio_num].driver |= 1;
+            GPIO.enable_out_set = (1U << gpio_num);
+            iomux_set_gpio_function(gpio_num, true);
+            break;
         }
     }
+}
+
+void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep) {
+    uint32_t flags = 0;
+
+    if (enabled) {
+        flags |= IOMUX_PIN_PULLUP;
+    }
+    if (enabled_during_sleep) {
+        flags |= IOMUX_PIN_PULLUP_SLEEP;
+    }
+    iomux_set_pullup_flags(gpio_2_iomux[gpio_num], flags);
+}
+
+gpio_err_t gpio_config(gpio_config_t *gpio_config) {
+    uint32_t gpio_mask = gpio_config->pin_bit_mask;
+
+    if (gpio_config->pin_bit_mask == 0) {
+        return GPIO_PIN_MASK_ERROR;
+    }
+    if (gpio_config->pin_bit_mask >= (1U << GPIO_PIN_COUNT)) {
+        return GPIO_PIN_NUMBER_TO_LARGE;
+    }
+    for(uint8_t idx_gpio = 0; idx_gpio < GPIO_PIN_COUNT; idx_gpio++){
+        if((gpio_mask & (1U << idx_gpio))){
+            if(RTC_GPIO_IS_VALID_GPIO(idx_gpio)){
+                if(gpio_config->dir == GPIO_DIR_OUTPUT){
+                    RTC.gpio_cfg[3] =  (((RTC.gpio_cfg[3] & (uint32_t)0xFFFFFFBC)) | 1U);
+                }
+                if ((gpio_config->dir == GPIO_DIR_OPEN_DRAIN) && !RTC_GPIO_IS_VALID_GPIO(idx_gpio)) {
+                    GPIO.pin[idx_gpio].driver = 1;
+                }
+                else {
+                    GPIO.pin[idx_gpio].driver = 0;
+                }
+                /* Chỉ cấu hình pulldown với GPIO 16 */
+                if (gpio_config->pull_down_en) {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].rtc_pin.pulldown = 1;
+                } else {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].rtc_pin.pulldown = 0;
+                }
+            }
+            else {
+                /* Cấu hình in/out */
+                if(gpio_config->dir == GPIO_DIR_OUTPUT) {
+                    GPIO.enable_out_set |= (1U << idx_gpio);
+                }
+                if ((gpio_config->dir == GPIO_DIR_OPEN_DRAIN) && !RTC_GPIO_IS_VALID_GPIO(idx_gpio)) {
+                    GPIO.pin[idx_gpio].driver = 1;
+                }
+                else {
+                    GPIO.pin[idx_gpio].driver = 0;
+                }
+                /* Chỉ cấu hình pullup khi không phải GPIO 16 */
+                if (gpio_config->pull_up_en) {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].pullup = 1;
+                } else {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].pullup = 0;
+                }
+                /* Cấu hình interrupt */
+                GPIO.pin[idx_gpio].int_type = gpio_config->intr_type;
+                /**
+                 * @brief Những GPIO 0/2/4/5 cần phải đặt thanh ghi func trong iomux thành 0
+                 *          Và những GPIO khác cần phải đặt thành 3 để sử dụng chức năng GPIO 
+                 */
+                if ((1U << idx_gpio) & ((1U) | (1U << 2) | (1U << 4) | (1U << 5))) {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].rtc_pin.func_low_bit = 0;
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].rtc_pin.func_high_bit = 0;
+                } else {
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].func_low_bit = 3;
+                    IOMUX.pin[gpio_2_iomux[idx_gpio]].func_high_bit = 0;
+                }
+            }
+        }
+    }
+    return GPIO_OK;
 }
