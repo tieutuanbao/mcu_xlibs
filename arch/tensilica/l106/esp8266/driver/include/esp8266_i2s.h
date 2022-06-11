@@ -1,20 +1,26 @@
-/* esp/i2s_regs.h
- *
- * ESP8266 I2S register definitions
- *
- * Not compatible with ESP SDK register access code.
+/**
+ * @file esp8266_i2s.h
+ * @author Tieu Tuan Bao (tieutuanbao@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-04-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #ifndef _ESP_I2S_REGS_H
 #define _ESP_I2S_REGS_H
 
-#include "esp/types.h"
-#include "common_macros.h"
+#include "esp8266_regs.h"
 
-#define I2S_BASE 0x60000e00
-#define I2S (*(struct I2S_REGS *)I2S_BASE)
+#define I2S (*(i2s_t *)I2S_BASE)
 
-typedef struct struct_i2s{
+/**
+ * @brief Cấu trúc thanh ghi I2S ESP8266
+ * 
+ */
+typedef struct struct_i2s {
     volatile uint32_t txfifo;           // 0x00
     volatile uint32_t rxfifo;           // 0x04
     volatile uint32_t conf;             // 0x08
@@ -28,8 +34,6 @@ typedef struct struct_i2s{
     volatile uint32_t conf_single_data; // 0x28
     volatile uint32_t conf_channels;    // 0x2c
 } i2s_t;
-
-_Static_assert(sizeof(struct I2S_REGS) == 0x30, "I2S_REGS is the wrong size");
 
 /* Details for CONF register */
 

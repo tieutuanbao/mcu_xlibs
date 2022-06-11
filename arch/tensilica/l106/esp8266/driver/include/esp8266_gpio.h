@@ -125,8 +125,6 @@ typedef struct {
 } gpio_config_t;
 
 
-
-
 void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler);
 void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction);
 void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep);
