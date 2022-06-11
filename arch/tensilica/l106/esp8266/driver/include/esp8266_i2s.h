@@ -14,7 +14,7 @@
 
 #include "esp8266_regs.h"
 
-#define I2S (*(i2s_t *)I2S_BASE)
+#define I2S     (*(i2s_t *)I2S_BASE)
 
 /**
  * @brief Cấu trúc thanh ghi I2S ESP8266

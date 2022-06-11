@@ -23,6 +23,7 @@ extern "C" {
 #define RTC_BASE        0x60000700
 #define IOMUX_BASE      0x60000800
 #define I2S_BASE        0x60000e00
+#define SPI_BASE        0x60000200
 
 #ifdef __cplusplus
 }
