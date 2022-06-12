@@ -1,6 +1,6 @@
-make.exe --dry-run --keep-going --print-directory
-make: Entering directory '/f/1.projects/1.phao_hoa_esp8266/220415/nonos/esp8266_project/mcu_libs_BitsCat'
-make: Leaving directory '/f/1.projects/1.phao_hoa_esp8266/220415/nonos/esp8266_project/mcu_libs_BitsCat'
+make.exe --dry-run --always-make --keep-going --print-directory
+make: Entering directory 'e:/1.work/2.Solantech/1.firework/220415/firework_esp8266_rtos/components/mcu_xlibs'
+make: Leaving directory 'e:/1.work/2.Solantech/1.firework/220415/firework_esp8266_rtos/components/mcu_xlibs'
  
 make: *** No targets specified and no makefile found.  Stop.
 

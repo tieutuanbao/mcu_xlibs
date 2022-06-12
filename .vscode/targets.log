@@ -2,77 +2,86 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make: *** No rule to make target 'all'.  Stop.
 
 # GNU Make 4.3
-# Built for x86_64-pc-msys
+# Built for Windows32
 # Copyright (C) 1988-2020 Free Software Foundation, Inc.
 # License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri May 27 12:55:50 2022
+# Make data base, printed on Sun Jun 12 17:46:04 2022
 
 # Variables
- 
 
 # environment
 SYSTEMDRIVE = C:
 # environment
+JAVA_HOME = C:\Program Files\Java\jdk-17.0.2
+# environment
 LC_ALL = C
 # environment
-USERPROFILE = C:\Users\Admin
+VBOX_HWVIRTEX_IGNORE_SVM_IN_USE = 1
 # environment
-LOCALAPPDATA = C:\Users\Admin\AppData\Local
+USERPROFILE = C:\Users\Bitscat
 # environment
-VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-16a04fd5-c704-4f75-96e3-a26fc9900469-sock
+IDF_PATH = C:\msys32\home\Bitscat\esp\ESP8266_RTOS_SDK
 # environment
-VSCODE_CWD = F:\1.projects\1.phao_hoa_esp8266\220415\nonos\esp8266_project\mcu_libs_BitsCat
+LOCALAPPDATA = C:\Users\Bitscat\AppData\Local
 # environment
-SYSTEMROOT = C:\WINDOWS
+VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-bc54ca7e-ab47-44f8-b5b4-dbc49412722a-sock
 # environment
-PROCESSOR_LEVEL = 6
+VSCODE_CWD = E:\1.work\2.Solantech\1.firework\220415\firework_esp8266_rtos\components\mcu_xlibs
 # environment
-PSMODULEPATH = C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+SYSTEMROOT = C:\Windows
+# environment
+PROCESSOR_LEVEL = 23
+# environment
+PSMODULEPATH = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
 # default
-MAKE_COMMAND := make
+MAKE_COMMAND := make.exe
 # automatic
-@D = $(patsubst %/,%,$(dir $@))
+@D = $(patsubst %/,%,$(patsubst %\,%,$(dir $@)))
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_13532_LZOYWACWWFHVDEVY
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_16152_DGGFTDFRAFUFWMDE
 # environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
 .VARIABLES := 
 # automatic
-%D = $(patsubst %/,%,$(dir $%))
+%D = $(patsubst %/,%,$(patsubst %\,%,$(dir $%)))
 # automatic
-^D = $(patsubst %/,%,$(dir $^))
+^D = $(patsubst %/,%,$(patsubst %\,%,$(dir $^)))
 # environment
 VSCODE_LOG_STACK = false
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = C:\Users\Admin\AppData\Roaming\Code\CachedData\c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5
+VSCODE_CODE_CACHE_PATH = C:\Users\Bitscat\AppData\Roaming\Code\CachedData\c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5
 # environment
 LANG = C
+# environment
+OMP_NUM_THREADS = 16
 # default
 .LOADED := 
 # environment
-TMP = /c/Users/Admin/AppData/Local/Temp
+TMP = C:\Users\Bitscat\AppData\Local\Temp
 # default
-.INCLUDE_DIRS = /usr/include /usr/include
+.INCLUDE_DIRS = .
+# environment
+PROCESSOR_ARCHITEW6432 = AMD64
 # makefile
 MAKEFLAGS = pqrR
 # environment
-ONEDRIVE = C:\Users\Admin\OneDrive
+ONEDRIVE = C:\Users\Bitscat\OneDrive
 # makefile
-CURDIR := /f/1.projects/1.phao_hoa_esp8266/220415/nonos/esp8266_project/mcu_libs_BitsCat
+CURDIR := e:/1.work/2.Solantech/1.firework/220415/firework_esp8266_rtos/components/mcu_xlibs
 # environment
 VSCODE_PIPE_LOGGING = true
 # environment
 APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # automatic
-*D = $(patsubst %/,%,$(dir $*))
+*D = $(patsubst %/,%,$(patsubst %\,%,$(dir $*)))
 # environment
-PROGRAMFILES = C:\Program Files
+PROGRAMFILES = C:\Program Files (x86)
 # environment
 MFLAGS = -pqrR
 # default
@@ -80,8 +89,7 @@ MFLAGS = -pqrR
 # environment
 COMMONPROGRAMW6432 = C:\Program Files\Common Files
 # automatic
-+D = $(patsubst %/,%,$(dir $+))
- 
++D = $(patsubst %/,%,$(patsubst %\,%,$(dir $+)))
 # environment
 IDF_TOOLS_PATH = C:\Espressif
 # makefile
@@ -91,25 +99,29 @@ MAKEFILE_LIST :=
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 13532
+VSCODE_PID = 16152
 # automatic
-?D = $(patsubst %/,%,$(dir $?))
+?D = $(patsubst %/,%,$(patsubst %\,%,$(dir $?)))
+# environment
+C_EM64T_REDIST11 = C:\Program Files (x86)\Common Files\Intel\Shared Files\cpp\
 # automatic
 *F = $(notdir $*)
 # automatic
-<D = $(patsubst %/,%,$(dir $<))
+<D = $(patsubst %/,%,$(patsubst %\,%,$(dir $<)))
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # environment
-ONEDRIVECONSUMER = C:\Users\Admin\OneDrive
+ONEDRIVECONSUMER = C:\Users\Bitscat\OneDrive
 # default
-MAKE_HOST := x86_64-pc-msys
+MAKE_HOST := Windows32
+# environment
+ANDROID_HOME = C:\Users\Bitscat\AppData\Local\Android\Sdk
 # environment
 PROGRAMDATA = C:\ProgramData
 # default
-SHELL := /bin/sh
+SHELL := C:/Program Files/Git/usr/bin/sh.exe
 # environment
-HOMEPATH = \Users\Admin
+HOMEPATH = \Users\Bitscat
 # environment
 PLATFORMIO_CALLER = vscode
 # default
@@ -117,19 +129,17 @@ MAKECMDGOALS := all
 # environment
 DRIVERDATA = C:\Windows\System32\Drivers\DriverData
 # environment
-COMSPEC = C:\WINDOWS\system32\cmd.exe
+COMSPEC = C:\Windows\system32\cmd.exe
 # environment
-WINDIR = C:\WINDOWS
+WINDIR = C:\Windows
 # environment
 MAKELEVEL := 0
 # default
 MAKE = $(MAKE_COMMAND)
 # environment
-PATH = /c/Python27:/c/Python27/Scripts:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0:/c/WINDOWS/System32/OpenSSH:/c/Program Files/dotnet:/c/Program Files (x86)/php:/c/composer:/c/Program Files/Git/cmd:/c/Users/Admin/AppData/Local/Microsoft/WindowsApps:/c/Users/Admin/AppData/Local/Programs/Microsoft VS Code/bin:/c/Program Files (x86)/Nmap:/c/WINDOWS/system32:/c/Program Files/SDCC/bin:/c/Program Files/CMake/bin:/c/Users/Admin/.dotnet/tools:/c/Users/Admin/AppData/Roaming/Composer/vendor/bin:/mingw64/bin:/usr/bin
+PATH = C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Intel\Shared Files\cpp\bin\Intel64;C:\Program Files (x86)\STMicroelectronics\st_toolset\asm;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Microsoft SQL Server\120\Tools\Binn\;C:\Program Files\dotnet\;C:\composer;C:\Program Files\Cloudflare\Cloudflare WARP\;C:\xampp\php;C:\Program Files\Microchip\xc8\v2.36\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\;C:\Users\Bitscat\AppData\Local\Microsoft\WindowsApps;C:\Users\Bitscat\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Bitscat\.dotnet\tools;C:\Users\Bitscat\AppData\Roaming\Composer\vendor\bin;C:\flutter\bin;C:\msys64\usr\bin;C:\msys64\mingw64\bin;C:\msys32\opt\xtensa-lx106-elf\bin;
 # environment
-ZES_ENABLE_SYSMAN = 1
-# environment
-COMPUTERNAME = DESKTOP-OL0EKIL
+COMPUTERNAME = DESKTOP-QPV1UC3
 # default
 MAKEFILES := 
 # automatic
@@ -137,13 +147,13 @@ MAKEFILES :=
 # environment
 PROMPT = $P$G
 # environment
-LOGONSERVER = \\DESKTOP-OL0EKIL
+LOGONSERVER = \\DESKTOP-QPV1UC3
 # environment
 VSCODE_LOG_NATIVE = false
 # environment
-USERNAME = Admin
+USERNAME = Bitscat
 # environment
-COMMONPROGRAMFILES = C:\Program Files\Common Files
+COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # automatic
 ?F = $(notdir $?)
 # environment
@@ -157,13 +167,13 @@ PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = undefined
 # environment
-USERDOMAIN = DESKTOP-OL0EKIL
+USERDOMAIN = DESKTOP-QPV1UC3
 # 'override' directive
 GNUMAKEFLAGS := 
 # environment
 OS = Windows_NT
 # environment
-PLATFORMIO_PATH = C:\Users\Admin\.platformio\penv\Scripts;C:\Users\Admin\.platformio\penv;C:\Users\Admin\.platformio\python3;C:\Python27\;C:\Python27\Scripts;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files (x86)\php;C:\composer;C:\Program Files\Git\cmd;C:\Users\Admin\AppData\Local\Microsoft\WindowsApps;C:\Users\Admin\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files (x86)\Nmap;C:\WINDOWS\system32\;C:\Program Files\SDCC\bin;C:\Program Files\CMake\bin;C:\Users\Admin\.dotnet\tools;C:\Users\Admin\AppData\Roaming\Composer\vendor\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;;C:\Python27\;C:\Python27\Scripts;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files (x86)\php;C:\composer;C:\Program Files\Git\cmd;C:\Users\Admin\AppData\Local\Microsoft\WindowsApps;C:\Users\Admin\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files (x86)\Nmap;C:\WINDOWS\system32\;C:\Program Files\SDCC\bin;C:\Program Files\CMake\bin;C:\Users\Admin\.dotnet\tools;C:\Users\Admin\AppData\Roaming\Composer\vendor\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;
+PLATFORMIO_PATH = C:\Users\Bitscat\.platformio\python3;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Intel\Shared Files\cpp\bin\Intel64;C:\Program Files (x86)\STMicroelectronics\st_toolset\asm;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Microsoft SQL Server\120\Tools\Binn\;C:\Program Files\dotnet\;C:\composer;C:\Program Files\Cloudflare\Cloudflare WARP\;C:\xampp\php;C:\Program Files\Microchip\xc8\v2.36\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\;C:\Users\Bitscat\AppData\Local\Microsoft\WindowsApps;C:\Users\Bitscat\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Bitscat\.dotnet\tools;C:\Users\Bitscat\AppData\Roaming\Composer\vendor\bin;C:\flutter\bin;C:\msys64\usr\bin;C:\msys64\mingw64\bin;C:\msys32\opt\xtensa-lx106-elf\bin;;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Intel\Shared Files\cpp\bin\Intel64;C:\Program Files (x86)\STMicroelectronics\st_toolset\asm;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Microsoft SQL Server\120\Tools\Binn\;C:\Program Files\dotnet\;C:\composer;C:\Program Files\Cloudflare\Cloudflare WARP\;C:\xampp\php;C:\Program Files\Microchip\xc8\v2.36\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\Bitscat\AppData\Local\Programs\Python\Python310\;C:\Users\Bitscat\AppData\Local\Microsoft\WindowsApps;C:\Users\Bitscat\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Bitscat\.dotnet\tools;C:\Users\Bitscat\AppData\Roaming\Composer\vendor\bin;C:\flutter\bin;C:\msys64\usr\bin;C:\msys64\mingw64\bin;C:\msys32\opt\xtensa-lx106-elf\bin;
 # makefile
 .DEFAULT_GOAL := 
 # default
@@ -171,36 +181,31 @@ MAKE_VERSION := 4.3
 # environment
 PROGRAMFILES(X86) = C:\Program Files (x86)
 # environment
-USERDOMAIN_ROAMINGPROFILE = DESKTOP-OL0EKIL
+USERDOMAIN_ROAMINGPROFILE = DESKTOP-QPV1UC3
 # environment
-NUMBER_OF_PROCESSORS = 12
+NUMBER_OF_PROCESSORS = 16
 # environment
- 
 PUBLIC = C:\Users\Public
 # environment
-!F: = f:\1.projects\1.phao_hoa_esp8266\220415\nonos\esp8266_project\mcu_libs_BitsCat
+ASL.LOG = Destination=file
 # environment
-APPDATA = C:\Users\Admin\AppData\Roaming
+APPDATA = C:\Users\Bitscat\AppData\Roaming
 # environment
 HOMEDRIVE = C:
 # environment
-PROCESSOR_ARCHITECTURE = AMD64
+PROCESSOR_ARCHITECTURE = x86
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 PLATFORMIO_IDE = 2.4.3
 # environment
-HOME = /home/Admin
-# environment
 COMMONPROGRAMFILES(X86) = C:\Program Files (x86)\Common Files
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-TEMP = /c/Users/Admin/AppData/Local/Temp
+TEMP = C:\Users\Bitscat\AppData\Local\Temp
 # environment
-VSCODE_IPC_HOOK = \\.\pipe\1fa9692ca970862365dc969f915639a2-1.67.2-main-sock
-# environment
-TERM = xterm-256color
+VSCODE_IPC_HOOK = \\.\pipe\5e084b36d701c8f4af0df0decca38f9d-1.67.2-main-sock
 # default
 .RECIPEPREFIX := 
 # automatic
@@ -212,13 +217,13 @@ ALLUSERSPROFILE = C:\ProgramData
 # environment
 SESSIONNAME = Console
 # default
-.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync load
 # environment
-PROCESSOR_REVISION = 9702
+PROCESSOR_REVISION = 0802
 # environment
-PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
+PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 8 Stepping 2, AuthenticAMD
 # variable set hash-table stats:
-# Load=101/1024=10%, Rehash=0, Collisions=13/125=10%
+# Load=105/1024=10%, Rehash=0, Collisions=12/128=9%
 
 # Pattern-specific Variable Values
 
@@ -226,9 +231,9 @@ PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
 
 # Directories
 
-# . (device 1177227544, inode 6192449487650677): 10 files, no impossibilities.
+# . (key e:/1.work/2.Solantech/1.firework/220415/firework_esp8266_rtos/components/mcu_xlibs, mtime 1654960401): 11 files, no impossibilities.
 
-# 10 files, no impossibilities in 1 directories.
+# 11 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -264,6 +269,13 @@ makefile:
 #  Failed to be updated.
 
 # Not a target:
+makefile.mak:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+# Not a target:
 GNUmakefile:
 #  Implicit rule search has been done.
 #  File does not exist.
@@ -271,20 +283,19 @@ GNUmakefile:
 #  Failed to be updated.
 
 # files hash-table stats:
-# Load=6/1024=1%, Rehash=0, Collisions=0/15=0%
+# Load=7/1024=1%, Rehash=0, Collisions=0/16=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
- 
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 17 / storage = 153 B / avg = 9 B
-# current buf: size = 8162 B / used = 153 B / count = 17 / avg = 9 B
+# strcache buffers: 1 (0) / strings = 18 / storage = 159 B / avg = 8 B
+# current buf: size = 8174 B / used = 159 B / count = 18 / avg = 8 B
 
-# strcache performance: lookups = 20 / hit rate = 15%
+# strcache performance: lookups = 21 / hit rate = 14%
 # hash-table stats:
-# Load=17/8192=0%, Rehash=0, Collisions=0/20=0%
-# Finished Make data base on Fri May 27 12:55:50 2022
+# Load=18/8192=0%, Rehash=0, Collisions=0/21=0%
+# Finished Make data base on Sun Jun 12 17:46:04 2022
 
  
