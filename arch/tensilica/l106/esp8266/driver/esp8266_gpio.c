@@ -9,7 +9,7 @@
  * 
  */
 
-#include "port_macro.h"
+#include "common_macros.h"
 #include "esp8266_gpio.h"
 #include "esp8266_rtc.h"
 #include "esp8266_iomux.h"

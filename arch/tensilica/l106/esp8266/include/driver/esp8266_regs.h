@@ -19,11 +19,14 @@ extern "C" {
 #endif
 
 
+#define UART0_BASE      0x60000000
+#define SPI_BASE        0x60000200
 #define GPIO_BASE       0x60000300
 #define RTC_BASE        0x60000700
 #define IOMUX_BASE      0x60000800
-#define I2S_BASE        0x60000e00
-#define SPI_BASE        0x60000200
+#define SLC_BASE        0x60000B00
+#define I2S_BASE        0x60000E00
+#define UART1_BASE      0x60000F00
 
 #ifdef __cplusplus
 }

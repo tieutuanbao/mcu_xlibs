@@ -12,7 +12,8 @@
 #define __ESP8266_IOMUX_H
 
 #include <stdint.h>
-#include "port_macro.h"
+#include <stdbool.h>
+#include "common_macros.h"
 #include "esp8266_regs.h"
 
 #define IOMUX       (*(iomux_t*)(IOMUX_BASE))

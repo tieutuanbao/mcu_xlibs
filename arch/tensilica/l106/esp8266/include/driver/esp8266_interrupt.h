@@ -30,6 +30,4 @@ typedef enum {
     INT_NUM_TIMER_FRC2      = 10,
 } int_num_t;
 
-
-
 #endif /* __ESP8266_INTERRUPT_H */

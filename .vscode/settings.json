@@ -1,5 +1,16 @@
 {
 	"files.associations": {
-		"lpd6803.h": "c"
+		"lpd6803.h": "c",
+		"esp8266_slc.h": "c",
+		"esp8266_regs.h": "c",
+		"esp8266_interrupt.h": "c",
+		"esp8266_i2s.h": "c",
+		"stdint.h": "c",
+		"esp8266_iomux.h": "c",
+		"port_macro.h": "c",
+		"bits_string.h": "c",
+		"cmath": "c",
+		"*.tcc": "c",
+		"cstdlib": "c"
 	}
 }
