@@ -39,4 +39,4 @@
 #define ESYNC() asm volatile ( "esync" )
 #define DSYNC() asm volatile ( "dsync" )
 
-#endif /* _XTENSA_OPS_H */
+#endif /* __XTENSA_OPS_H */

@@ -3,8 +3,8 @@
    Note that a lot of the ROM functions used in the IoT SDK aren't
    referenced from the Espressif RTOS SDK, and are probably incompatible.
  */
-#ifndef _ESP_ROM_H
-#define _ESP_ROM_H
+#ifndef __ESP_ROM_H
+#define __ESP_ROM_H
 
 #include "flashchip.h"
 

@@ -1,5 +1,5 @@
 /**
- * @file esp8266_i2s.c
+ * @file esp8266_I2S->c
  * @author Tieu Tuan Bao (tieutuanbao@gmail.com)
  * @brief 
  * @version 0.1
@@ -9,7 +9,7 @@
  * 
  */
 
-#include "esp8266_i2s.h"
+#include "esp8266_I2S.h"
 #include "esp8266_iomux.h"
 #include "esp8266_sdk_function.h"
 #include <math.h>
@@ -42,31 +42,31 @@ FUNC_ON_FLASH void i2s_init(i2s_clock_div_t clock_div, i2s_pins_t pins) {
     /* enable clock to i2s subsystem */
     i2c_writeReg_Mask_def(i2c_bbpll, i2c_bbpll_en_audio_clock_out, 1);
 
-    I2S.int_clear = I2S_INT_CLEAR_MASK;
-    I2S.int_enable = 0;
+    I2S->int_clr.val = I2S_INT_CLEAR_MASK;
+    I2S->int_ena.val = 0;
     
     /* reset I2S subsystem */
-    I2S.conf &= ~I2S_CONF_RESET_MASK;
-    I2S.conf |= I2S_CONF_RESET_MASK;
-    I2S.conf &= ~I2S_CONF_RESET_MASK;
+    I2S->conf.val &= ~I2S_CONF_RESET_MASK;
+    I2S->conf.val |= I2S_CONF_RESET_MASK;
+    I2S->conf.val &= ~I2S_CONF_RESET_MASK;
 
     /* select 16bits per channel (FIFO_MOD=0), no DMA access (FIFO only) */
-    I2S.fifo_conf &= ~I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
-    I2S.fifo_conf &= ~I2S_FIFO_CONF_RX_FIFO_MOD_MASK;
-    I2S.fifo_conf &= ~I2S_FIFO_CONF_TX_FIFO_MOD_MASK;
+    I2S->fifo_conf.val &= ~I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
+    I2S->fifo_conf.val &= ~I2S_FIFO_CONF_RX_FIFO_MOD_MASK;
+    I2S->fifo_conf.val &= ~I2S_FIFO_CONF_TX_FIFO_MOD_MASK;
 
     /* Set Channel = 0 */
-    I2S.conf_channels &= ~(I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK | I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK);
+    I2S->conf_chan.val &= ~(I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK | I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK);
 
     /* trans master and receiv slave, MSB shift, right_first, msb right */
-    I2S.conf &= ~I2S_CONF_TX_SLAVE_MOD;
-    I2S.conf &= ~I2S_CONF_BITS_MOD_MASK;
-    I2S.conf &= ~I2S_CONF_BCK_DIV_MASK;
-    I2S.conf &= ~I2S_CONF_CLKM_DIV_MASK;
+    I2S->conf.val &= ~I2S_CONF_TX_SLAVE_MOD;
+    I2S->conf.val &= ~I2S_CONF_BITS_MOD_MASK;
+    I2S->conf.val &= ~I2S_CONF_BCK_DIV_MASK;
+    I2S->conf.val &= ~I2S_CONF_CLKM_DIV_MASK;
 
-    I2S.conf |= I2S_CONF_RIGHT_FIRST | I2S_CONF_MSB_RIGHT | I2S_CONF_RX_SLAVE_MOD | I2S_CONF_RX_MSB_SHIFT | I2S_CONF_TX_MSB_SHIFT;
-    I2S.conf = (I2S.conf & (~I2S_CONF_BCK_DIV_MASK)) | (((uint32_t)clock_div.bclk_div) << I2S_CONF_BCK_DIV_POS);
-    I2S.conf = (I2S.conf & (~I2S_CONF_CLKM_DIV_MASK)) | (((uint32_t)clock_div.clkm_div) << I2S_CONF_CLKM_DIV_POS);
+    I2S->conf.val |= I2S_CONF_RIGHT_FIRST | I2S_CONF_MSB_RIGHT | I2S_CONF_RX_SLAVE_MOD | I2S_CONF_RX_MSB_SHIFT | I2S_CONF_TX_MSB_SHIFT;
+    I2S->conf.val = (I2S->conf.val & (~I2S_CONF_BCK_DIV_MASK)) | (((uint32_t)clock_div.bclk_div) << I2S_CONF_BCK_DIV_POS);
+    I2S->conf.val = (I2S->conf.val & (~I2S_CONF_CLKM_DIV_MASK)) | (((uint32_t)clock_div.clkm_div) << I2S_CONF_CLKM_DIV_POS);
 }
 
 /**
@@ -95,8 +95,8 @@ FUNC_ON_FLASH i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq) {
         }
     }
 
-    printf("Requested frequency: %d, set frequency: %d\n", freq, best_freq);
-    printf("clkm_div: %d, bclk_div: %d\n", div.clkm_div, div.bclk_div);
+    BITS_LOG("Requested frequency: %d, set frequency: %d\n", freq, best_freq);
+    BITS_LOG("clkm_div: %d, bclk_div: %d\n", div.clkm_div, div.bclk_div);
 
     return div;
 }
@@ -106,10 +106,10 @@ FUNC_ON_FLASH i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq) {
  * 
  */
 FUNC_ON_FLASH void i2s_start(void) {
-    // enable DMA in i2s subsystem
-    I2S.fifo_conf |= I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
-    //Start transmission
-    I2S.conf |= I2S_CONF_TX_START;
+    /* enable DMA in i2s subsystem */
+    I2S->fifo_conf.val |= I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
+    /* Start transmission */
+    I2S->conf.val |= I2S_CONF_TX_START;
 }
 
 /**
@@ -117,5 +117,5 @@ FUNC_ON_FLASH void i2s_start(void) {
  * 
  */
 FUNC_ON_FLASH void i2s_stop(void) {
-    I2S.fifo_conf &= ~I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
+    I2S->fifo_conf.val &= ~I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
 }

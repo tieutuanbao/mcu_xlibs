@@ -23,11 +23,11 @@ uint8_t FUNC_ON_RAM iomux_to_gpio(const uint8_t iomux_number)
  * @brief Lấy iomux cho số index của gpio
  * 
  * @param idx_gpio 0, 1, 2, 3, 4 ....
- * @return volatile* Con trỏ đến IOMUX.pin
+ * @return volatile* Con trỏ đến IOMUX->pin
  */
 inline static volatile uint32_t * gpio_iomux_reg(const uint8_t idx_gpio)
 {
-    return &(IOMUX.pin[gpio_2_iomux[idx_gpio]].val);
+    return &(IOMUX->pin[gpio_2_iomux[idx_gpio]].val);
 }
 
 /**
@@ -37,20 +37,20 @@ inline static volatile uint32_t * gpio_iomux_reg(const uint8_t idx_gpio)
  * @param iomux_func Chức năng GPIO được define dạng  IOMUX_GPIOn_FUNC_xxx (n là index GPIO và xxx là tên chức năng)
  */
 void iomux_set_function(uint8_t iomux_num, uint32_t iomux_func) {
-    uint32_t prev = IOMUX.pin[iomux_num].val & (~IOMUX_PIN_FUNC_MASK);
-    IOMUX.pin[iomux_num].val = iomux_func | prev;
+    uint32_t prev = IOMUX->pin[iomux_num].val & (~IOMUX_PIN_FUNC_MASK);
+    IOMUX->pin[iomux_num].val = iomux_func | prev;
 }
 
 void iomux_set_direction_flags(uint8_t iomux_num, uint32_t dir_flags) {
     uint32_t mask = IOMUX_PIN_OUTPUT_ENABLE | IOMUX_PIN_OUTPUT_ENABLE_SLEEP;
-    uint32_t prev = IOMUX.pin[iomux_num].val & ~mask;
-    IOMUX.pin[iomux_num].val = dir_flags | prev;
+    uint32_t prev = IOMUX->pin[iomux_num].val & ~mask;
+    IOMUX->pin[iomux_num].val = dir_flags | prev;
 }
 
 void iomux_set_pullup_flags(uint8_t iomux_num, uint32_t pullup_flags) {
     uint32_t mask = IOMUX_PIN_PULLUP | IOMUX_PIN_PULLDOWN | IOMUX_PIN_PULLUP_SLEEP | IOMUX_PIN_PULLDOWN_SLEEP;
-    uint32_t prev = IOMUX.pin[iomux_num].val & ~mask;
-    IOMUX.pin[iomux_num].val = pullup_flags | prev;
+    uint32_t prev = IOMUX->pin[iomux_num].val & ~mask;
+    IOMUX->pin[iomux_num].val = pullup_flags | prev;
 }
 
 /**

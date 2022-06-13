@@ -15,7 +15,7 @@
 #include "common_macros.h"
 #include "esp8266_regs.h"
 
-#define IOMUX       (*(iomux_t*)(IOMUX_BASE))
+#define IOMUX       ((iomux_t*)(IOMUX_BASE))
 
 typedef struct struct_iomux {
     volatile uint32_t conf;    // 0x00
@@ -61,8 +61,7 @@ typedef struct struct_iomux {
 #define IOMUX_PIN_FUNC_POS                  4
 #define IOMUX_PIN_FUNC_MASK                 (0x00000013 << IOMUX_PIN_FUNC_POS)
 
-/* WARNING: Macro evaluates argument twice */
-#define IOMUX_FUNC(val)     (((val) & 0x04) << 2)|((val) & 0x03) << 4
+#define IOMUX_FUNC(val)                     ((((val) & 0x04) << 2)|((val) & 0x03) << 4)
 
 #define IOMUX_GPIO0                         IOMUX.pin[12]
 #define IOMUX_GPIO1                         IOMUX.pin[5]

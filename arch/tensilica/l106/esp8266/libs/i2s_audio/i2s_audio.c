@@ -52,7 +52,7 @@ FUNC_ON_FLASH void init_descriptors_list() {
  */
 FUNC_ON_RAM inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
 {
-    return (dma_descriptor_t*)SLC.rx_eof_descriptor_addr;
+    return (dma_descriptor_t*)SLC->rx_eof_des_addr;
 }
 
 /**
@@ -61,7 +61,7 @@ FUNC_ON_RAM inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
  * @return bool : true = Có ngắt EOF
  */
 FUNC_ON_RAM bool i2s_dma_is_eof_interrupt() {
-    if(SLC.int_status & SLC_INT_STATUS_RX_EOF) return true;
+    if(SLC->int_st.val & SLC_INT_STATUS_RX_EOF) return true;
     return false;
 }
 
@@ -81,7 +81,7 @@ FUNC_ON_RAM void dma_isr_handler(void *args) {
         dma_queue.queue[dma_queue.queue_len++] = descr->buf_ptr;
     }
     /* Clear interrupt */
-    SLC.int_clear = 0xFFFFFFFF;
+    SLC->int_clr.val = 0xFFFFFFFF;
     /* Enable DMA interrupt */
     enable_interrupts(INT_NUM_SLC);
 }
