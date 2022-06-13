@@ -13,6 +13,7 @@
 #define __ESP8266_SLC_H
 
 #include "esp8266_regs.h"
+#include "common_macros.h"
 
 #define SLC         (*(slc_t *)SLC_BASE)
 
@@ -204,15 +205,15 @@ typedef struct struct_slc {
 #define SLC_RX_LINK_START                           (1U << 29)
 #define SLC_RX_LINK_STOP                            (1U << 28)
 #define SLC_RX_LINK_DESCRIPTOR_ADDR_POS             0
-#define SLC_RX_LINK_DESCRIPTOR_ADDR_MASK            (0x000fffff << SLC_RX_LINK_DESCRIPTOR_ADDR_POS)
+#define SLC_RX_LINK_DESCRIPTOR_ADDR_MASK            (0x0000ffff << SLC_RX_LINK_DESCRIPTOR_ADDR_POS)
 
 /* Details for TX_LINK register */
 #define SLC_TX_LINK_PARK                            (1U << 31)
 #define SLC_TX_LINK_RESTART                         (1U << 30)
 #define SLC_TX_LINK_START                           (1U << 29)
 #define SLC_TX_LINK_STOP                            (1U << 28)
-#define SLC_TX_LINK_DESCRIPTOR_ADDR_M               0x000fffff
-#define SLC_TX_LINK_DESCRIPTOR_ADDR_S               0
+#define SLC_TX_LINK_DESCRIPTOR_ADDR_POS             0
+#define SLC_TX_LINK_DESCRIPTOR_ADDR_MASK            (0x0000ffff << SLC_TX_LINK_DESCRIPTOR_ADDR_POS)
 
 /* Details for INTVEC_TO_HOST register */
 #define SLC_INTVEC_TO_HOST_INTVEC_M                 0x000000ff
@@ -275,13 +276,14 @@ typedef struct struct_dma_descriptor {
     uint32_t eof            : 1;
     uint32_t owner          : 1;    // giá trị này có thể bị thay đổi bởi DMA
     void* buf_ptr;
-    struct dma_descriptor *next;
+    struct struct_dma_descriptor *next;
 } dma_descriptor_t;
 
 typedef void (*slc_handler_isr)(void *);
 
-void slc_init(void);
-void slc_register_handler(slc_handler_isr slc_isr, void *arg);
+FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg);
+FUNC_ON_FLASH void slc_start(dma_descriptor_t *descr);
+FUNC_ON_FLASH void slc_stop(void);
 
 
 #endif /* __ESP8266_SLC_H */

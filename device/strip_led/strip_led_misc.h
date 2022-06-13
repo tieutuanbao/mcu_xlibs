@@ -1,7 +1,7 @@
 #ifndef __STRIP_LED_MISC_H
 #define __STRIP_LED_MISC_H
 
-#include "port_macro.h"
+#include "common_macros.h"
 #include "color.h"
 
 typedef struct {

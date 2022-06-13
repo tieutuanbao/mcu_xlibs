@@ -13,8 +13,9 @@
 #define __ESP8266_I2S_REGS_H
 
 #include "esp8266_regs.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include "common_macros.h"
+#include "c_types.h"
+
 
 #define I2S     (*(i2s_t *)I2S_BASE)
 
@@ -103,6 +104,7 @@ typedef struct {
 #define I2S_INT_ENABLE_RX_TAKE_DATA  (1U << 0)
 
 /* Details for INT_CLEAR register */
+#define I2S_INT_CLEAR_MASK          0x3F
 #define I2S_INT_CLEAR_TX_REMPTY     (1U << 5)
 #define I2S_INT_CLEAR_TX_WFULL      (1U << 4)
 #define I2S_INT_CLEAR_RX_REMPTY     (1U << 3)
@@ -147,10 +149,15 @@ typedef struct {
 #define I2S_FIFO_CONF_RX_DATA_NUM_MASK      (0x0000003f << I2S_FIFO_CONF_RX_DATA_NUM_POS)
 
 /* Details for CONF_CHANNEL register */
-#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_M  0x00000003
-#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_S  3
-#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_M  0x00000007
-#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_S  0
+#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_POS    3
+#define I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK   (0x00000003 << I2S_CONF_CHANNELS_RX_CHANNEL_MOD_POS)
+#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS    0
+#define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK   (0x00000007 << I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS)
 
+
+FUNC_ON_FLASH void i2s_init(i2s_clock_div_t clock_div, i2s_pins_t pins);
+FUNC_ON_FLASH i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq);
+FUNC_ON_FLASH void i2s_start(void);
+FUNC_ON_FLASH void i2s_stop(void);
 
 #endif /* __ESP8266_I2S_REGS_H */

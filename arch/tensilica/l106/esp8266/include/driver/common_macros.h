@@ -1,9 +1,10 @@
 #ifndef __PORT_H
 #define __PORT_H
 
-
+#include "osapi.h"
+#include "ets_sys.h"
 #include "bits_string.h"
-#include <mem.h>
+#include "mem.h"
 
 /* Define debug logger */
 #define ANSI_COLOR_LOG      "[LOG: ]"
@@ -19,7 +20,7 @@
 #define FUNC_ON_FLASH       ICACHE_FLASH_ATTR
 #define FUNC_ON_RAM         
 #define VAR_ON_FLASH        ICACHE_RODATA_ATTR
-#define VAR_ON_IRAM              
+#define VAR_ON_IRAM         
 
 #define printf              os_printf
 #define malloc              os_zalloc
@@ -29,15 +30,6 @@
 #define sprintf             os_sprintf
 #define strcpy              os_strcpy
 #define memcpy              os_memcpy
-
-#define disable_all_interrupts()    ETS_INTR_LOCK()
-#define enable_all_interrupts()     ETS_INTR_UNLOCK()
-
-#define disable_interrupts(n)       ETS_INTR_ENABLE(n)
-#define enable_interrupts(n)        ETS_INTR_DISABLE(n)
-
-#define register_interrupts(n, h, a)        ets_isr_attach(n, h, a)
-#define unregister_interrupts(n, h, a)      ets_isr_attach(n, h, a)
 
 #define rand()  os_random()
 
@@ -63,13 +55,13 @@
 #define FUNC_UART0_DTR                      4
 
 #define ETS_SLC_INTR_ATTACH(func, arg) \
-    ets_isr_attach(ETS_SLC_INUM, (ets_isr_t)(func), (void *)(arg))
+    ets_isr_attach(INT_NUM_SLC, (ets_isr_t)(func), (void *)(arg))
 
 #define ETS_SLC_INTR_ENABLE() \
-    ETS_INTR_ENABLE(ETS_SLC_INUM)
+    ETS_INTR_ENABLE(INT_NUM_SLC)
 
 #define ETS_SLC_INTR_DISABLE() \
-    ETS_INTR_DISABLE(ETS_SLC_INUM)
+    ETS_INTR_DISABLE(INT_NUM_SLC)
 
 #define tolower char_to_lower
 

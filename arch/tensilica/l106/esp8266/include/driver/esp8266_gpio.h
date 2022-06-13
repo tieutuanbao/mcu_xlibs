@@ -21,9 +21,13 @@ extern "C" {
 #endif
 
 #define GPIO                        (*(gpio_t *)(GPIO_BASE))
+
+#ifndef GPIO_PIN_COUNT
+#define GPIO_PIN_COUNT              17
+#endif
+
 #define GPIO_CONF_INTTYPE_POS       7
 #define GPIO_CONF_INTTYPE_MASK      (7U << GPIO_CONF_INTTYPE_POS)
-#define GPIO_PIN_COUNT              17
 
 #define RTC_GPIO_IS_VALID_GPIO(gpio_num)     ((gpio_num == 16))    /*!< Check whether it is a valid RTC GPIO number */
 

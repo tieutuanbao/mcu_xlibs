@@ -1,7 +1,7 @@
 #ifndef __ESP8266_WIFI_SCAN_H
 #define __ESP8266_WIFI_SCAN_H
 
-#include "port_macro.h"
+#include "common_macros.h"
 #include "user_interface.h"
 
 #define WIFI_SCAN_RUNNING   (-1)

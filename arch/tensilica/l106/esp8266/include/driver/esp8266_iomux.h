@@ -12,7 +12,6 @@
 #define __ESP8266_IOMUX_H
 
 #include <stdint.h>
-#include <stdbool.h>
 #include "common_macros.h"
 #include "esp8266_regs.h"
 
@@ -48,36 +47,22 @@ typedef struct struct_iomux {
 #define IOMUX_CONF_SPI1_CLOCK_EQU_SYS_CLOCK  (1U << 9)
 
 /* Details for pin registers */
-#define IOMUX_PIN_OUTPUT_ENABLE_POS         0
-#define IOMUX_PIN_OUTPUT_ENABLE_MASK        (1U << IOMUX_PIN_OUTPUT_ENABLE_POS)
-#define IOMUX_PIN_OUTPUT_ENABLE             IOMUX_PIN_OUTPUT_ENABLE_MASK
-#define IOMUX_PIN_OUTPUT_ENABLE_SLEEP_POS   1
-#define IOMUX_PIN_OUTPUT_ENABLE_SLEEP_MASK  (1U << IOMUX_PIN_OUTPUT_ENABLE_SLEEP_POS)
-#define IOMUX_PIN_OUTPUT_ENABLE_SLEEP       IOMUX_PIN_OUTPUT_ENABLE_SLEEP_MASK
-#define IOMUX_PIN_PULLDOWN_SLEEP_POS        2
-#define IOMUX_PIN_PULLDOWN_SLEEP_MASK       (1U << IOMUX_PIN_PULLDOWN_SLEEP_POS)
-#define IOMUX_PIN_PULLDOWN_SLEEP            IOMUX_PIN_PULLDOWN_SLEEP_MASK
-#define IOMUX_PIN_PULLUP_SLEEP_POS          3
-#define IOMUX_PIN_PULLUP_SLEEP_MASK         (1U << IOMUX_PIN_PULLUP_SLEEP_POS)
-#define IOMUX_PIN_PULLUP_SLEEP              IOMUX_PIN_PULLUP_SLEEP_MASK
+#define IOMUX_PIN_OUTPUT_ENABLE             (1U << 0)
+#define IOMUX_PIN_OUTPUT_ENABLE_SLEEP       (1U << 1)
+#define IOMUX_PIN_PULLDOWN_SLEEP            (1U << 2)
+#define IOMUX_PIN_PULLUP_SLEEP              (1U << 3)
 #define IOMUX_PIN_FUNC_LOW_POS              4
 #define IOMUX_PIN_FUNC_LOW_MASK             (3U << IOMUX_PIN_FUNC_LOW_POS)
 #define IOMUX_PIN_FUNC_LOW                  IOMUX_PIN_FUNC_LOW_MASK
-#define IOMUX_PIN_PULLDOWN_POS              6
-#define IOMUX_PIN_PULLDOWN_MASK             (1U << IOMUX_PIN_PULLDOWN_POS)
-#define IOMUX_PIN_PULLDOWN                  IOMUX_PIN_PULLDOWN_MASK
-#define IOMUX_PIN_PULLUP_POS                7
-#define IOMUX_PIN_PULLUP_MASK               (1U << IOMUX_PIN_PULLUP_POS)
-#define IOMUX_PIN_PULLUP                    IOMUX_PIN_PULLUP_MASK
-#define IOMUX_PIN_FUNC_HIGH_POS             8
-#define IOMUX_PIN_FUNC_HIGH_MASK            (1U << IOMUX_PIN_FUNC_HIGH_POS)
-#define IOMUX_PIN_FUNC_HIGH                 IOMUX_PIN_FUNC_HIGH_MASK
+#define IOMUX_PIN_PULLDOWN                  (1U << 6)
+#define IOMUX_PIN_PULLUP                    (1U << 7)
+#define IOMUX_PIN_FUNC_HIGH                 (1U << 8)
 
-#define IOMUX_PIN_FUNC_MASK                 0x00000130
+#define IOMUX_PIN_FUNC_POS                  4
+#define IOMUX_PIN_FUNC_MASK                 (0x00000013 << IOMUX_PIN_FUNC_POS)
 
 /* WARNING: Macro evaluates argument twice */
-#define IOMUX_FUNC(val) ((((val) & (IOMUX_PIN_FUNC_LOW_MASK >> IOMUX_PIN_FUNC_LOW_POS)) << IOMUX_PIN_FUNC_LOW_POS) |    \
-                        (((val) & (IOMUX_PIN_FUNC_HIGH_MASK >> IOMUX_PIN_FUNC_HIGH_POS)) << IOMUX_PIN_FUNC_HIGH_POS))
+#define IOMUX_FUNC(val)     (((val) & 0x04) << 2)|((val) & 0x03) << 4
 
 #define IOMUX_GPIO0                         IOMUX.pin[12]
 #define IOMUX_GPIO1                         IOMUX.pin[5]
@@ -179,11 +164,13 @@ typedef struct struct_iomux {
 #define IOMUX_GPIO15_FUNC_GPIO             IOMUX_FUNC(3)
 #define IOMUX_GPIO15_FUNC_UART0_RTS        IOMUX_FUNC(4)
 
-extern const VAR_ON_IRAM uint32_t iomux_2_gpio[];
-extern const VAR_ON_IRAM uint32_t gpio_2_iomux[];
+extern VAR_ON_IRAM uint8_t iomux_2_gpio[16];
+extern VAR_ON_IRAM uint8_t gpio_2_iomux[16];
 
 
 void iomux_set_pullup_flags(uint8_t iomux_num, uint32_t pullup_flags);
 void iomux_set_gpio_function(uint8_t idx_gpio, bool output_enable);
+void iomux_set_function(uint8_t iomux_num, uint32_t iomux_func);
+void iomux_set_direction_flags(uint8_t iomux_num, uint32_t dir_flags);
 
 #endif /* __ESP8266_IOMUX_H */
