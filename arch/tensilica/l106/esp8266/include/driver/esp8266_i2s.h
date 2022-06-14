@@ -16,8 +16,7 @@
 #include "common_macros.h"
 #include "c_types.h"
 
-
-#define I2S     ((i2s_t *)I2S_BASE)
+#define I2S0    ((i2s_t *)I2S_BASE)
 
 /**
  * @brief Cấu trúc thanh ghi I2S ESP8266
@@ -137,17 +136,6 @@ typedef struct struct_i2s {
     } conf_chan;
 } i2s_t;
 
-typedef struct {
-    uint8_t bclk_div;
-    uint8_t clkm_div;
-} i2s_clock_div_t;
-
-typedef struct {
-    bool data;
-    bool clock;
-    bool ws;
-} i2s_pins_t;
-
 #ifndef i2c_bbpll
     #define i2c_bbpll                               0x67
     #define i2c_bbpll_en_audio_clock_out            4
@@ -253,10 +241,94 @@ typedef struct {
 #define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS    0
 #define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK   (0x00000007 << I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS)
 
+/**
+ * @brief I2S Peripheral, 0
+ */
+typedef enum {
+    I2S_NUM_0 = 0x0,  /*!< I2S 0*/
+    I2S_NUM_MAX,
+} i2s_port_t;
 
-FUNC_ON_FLASH void i2s_init(i2s_clock_div_t clock_div, i2s_pins_t pins);
-FUNC_ON_FLASH i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq);
-FUNC_ON_FLASH void i2s_start(void);
-FUNC_ON_FLASH void i2s_stop(void);
+typedef struct {
+    uint8_t bclk_div;
+    uint8_t clkm_div;
+} i2s_clock_div_t;
+
+typedef struct {
+    int bck_o_en;      /*!< BCK out pin*/
+    int ws_o_en;       /*!< WS out pin*/
+    int bck_i_en;      /*!< BCK in pin*/
+    int ws_i_en;       /*!< WS in pin*/
+    int data_out_en;   /*!< DATA out pin*/
+    int data_in_en;    /*!< DATA in pin*/
+} i2s_pin_config_t;
+
+/**
+ * @brief I2S bit width per sample.
+ */
+typedef enum {
+    I2S_BITS_PER_SAMPLE_8BIT    = 8,        /*!< I2S bits per sample: 8-bits*/
+    I2S_BITS_PER_SAMPLE_16BIT   = 16,       /*!< I2S bits per sample: 16-bits*/
+    I2S_BITS_PER_SAMPLE_24BIT   = 24,       /*!< I2S bits per sample: 24-bits*/
+} i2s_bits_per_sample_t;
+
+/**
+ * @brief I2S channel.
+ */
+typedef enum {
+    I2S_CHANNEL_MONO        = 1,            /*!< I2S 1 channel (mono)*/
+    I2S_CHANNEL_STEREO      = 2             /*!< I2S 2 channel (stereo)*/
+} i2s_channel_t;
+
+/**
+ * @brief I2S communication standard format
+ */
+typedef enum {
+    I2S_COMM_FORMAT_I2S         = 0x01, /*!< I2S communication format I2S*/
+    I2S_COMM_FORMAT_I2S_MSB     = 0x02, /*!< I2S format MSB*/
+    I2S_COMM_FORMAT_I2S_LSB     = 0x04, /*!< I2S format LSB*/
+} i2s_comm_format_t;
+
+/**
+ * @brief I2S channel format type
+ */
+typedef enum {
+    I2S_CHANNEL_FMT_RIGHT_LEFT  = 0x00,
+    I2S_CHANNEL_FMT_ALL_RIGHT,
+    I2S_CHANNEL_FMT_ALL_LEFT,
+    I2S_CHANNEL_FMT_ONLY_RIGHT,
+    I2S_CHANNEL_FMT_ONLY_LEFT,
+} i2s_channel_fmt_t;
+
+/**
+ * @brief I2S Mode, defaut is I2S_MODE_MASTER | I2S_MODE_TX
+ */
+typedef enum {
+    I2S_MODE_MASTER     = 1,
+    I2S_MODE_SLAVE      = 2,
+    I2S_MODE_TX         = 4,
+    I2S_MODE_RX         = 8,
+} i2s_mode_t;
+
+typedef struct {
+    i2s_mode_t              mode;                   /*!< I2S work mode*/
+    int                     sample_rate;            /*!< I2S sample rate*/
+    i2s_bits_per_sample_t   bits_per_sample;        /*!< I2S bits per sample*/
+    i2s_channel_fmt_t       channel_format;         /*!< I2S channel format */
+    i2s_comm_format_t       communication_format;   /*!< I2S communication format */
+    int                     dma_buf_count;          /*!< I2S DMA Buffer Count */
+    int                     dma_buf_len;            /*!< I2S DMA Buffer Length */
+    bool                    tx_desc_auto_clear;     /*!< I2S auto clear tx descriptor if there is underflow condition (helps in avoiding noise in case of data unavailability) */
+} i2s_config_t;
+
+extern i2s_t *I2S[I2S_NUM_MAX];
+
+ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins);
+ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins);
+ICACHE_FLASH_ATTR i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq);
+ICACHE_FLASH_ATTR void i2s_set_channel(i2s_port_t i2s_num, i2s_channel_fmt_t ch_fmt, i2s_bits_per_sample_t bits);
+ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate);
+ICACHE_FLASH_ATTR void i2s_start(i2s_port_t i2s_num);
+ICACHE_FLASH_ATTR void i2s_stop(i2s_port_t i2s_num);
 
 #endif /* __ESP8266_I2S_REGS_H */

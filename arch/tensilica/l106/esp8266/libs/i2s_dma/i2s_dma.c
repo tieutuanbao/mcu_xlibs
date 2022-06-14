@@ -1,17 +1,26 @@
-#include "i2s_audio.h"
+/**
+ * @file i2s_dma.c
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-06-13
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+
+#include "i2s_dma.h"
 #include "common_macros.h"
 #include "esp8266_interrupt.h"
 #include "esp8266_i2s.h"
 #include "esp8266_slc.h"
 
-#define DMA_BUFFER_SIZE         512
-#define DMA_QUEUE_SIZE          4
-
 /* Descriptor Buffer vòng DMA */
 static dma_descriptor_t dma_block_list[DMA_QUEUE_SIZE];
 
 /* Buffer DMA */
-static uint8_t dma_buffer[DMA_QUEUE_SIZE][DMA_BUFFER_SIZE];
+static uint32_t dma_buffer[DMA_QUEUE_SIZE][DMA_BUFFER_SIZE];
 
 /* Cấu trúc queue */
 typedef struct struct_queue {
@@ -24,9 +33,9 @@ queue_t dma_queue;
 /**
  * @brief Khởi tạo Deskcriptor
  * 
- * @return FUNC_ON_FLASH 
+ * @return void 
  */
-FUNC_ON_FLASH void init_descriptors_list() {
+ICACHE_FLASH_ATTR void init_descriptors_list() {
     memset(dma_buffer, 0, DMA_QUEUE_SIZE * DMA_BUFFER_SIZE);
 
     for (int i = 0; i < DMA_QUEUE_SIZE; i++) {
@@ -50,7 +59,7 @@ FUNC_ON_FLASH void init_descriptors_list() {
  * 
  * @return dma_descriptor_t* 
  */
-FUNC_ON_RAM inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
+inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
 {
     return (dma_descriptor_t*)SLC->rx_eof_des_addr;
 }
@@ -60,12 +69,12 @@ FUNC_ON_RAM inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
  * 
  * @return bool : true = Có ngắt EOF
  */
-FUNC_ON_RAM bool i2s_dma_is_eof_interrupt() {
+bool i2s_dma_is_eof_interrupt() {
     if(SLC->int_st.val & SLC_INT_STATUS_RX_EOF) return true;
     return false;
 }
 
-FUNC_ON_RAM void dma_isr_handler(void *args) {
+void dma_isr_handler(void *args) {
     /* Disable DMA interrupt */
     disable_interrupts(INT_NUM_SLC);
     if (i2s_dma_is_eof_interrupt()) {
@@ -91,11 +100,10 @@ FUNC_ON_RAM void dma_isr_handler(void *args) {
  * 
  * @return void 
  */
-FUNC_ON_FLASH void i2s_dma_init(i2s_dma_config_t *i2s_config) {
+ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins) {
     /* Khởi tạo DMA và I2S */
     slc_init(dma_isr_handler, 0);
-    i2s_init(i2s_freq_to_clock_div(11025 * 1 * 16), (i2s_pins_t){.clock = 1, .data = 1, .ws = 1});
-    BITS_LOG("i2s_audio_init ok!\r\n");
+    i2s_init(i2s_num, i2s_config, pins);
 }
 
 /**
@@ -103,34 +111,34 @@ FUNC_ON_FLASH void i2s_dma_init(i2s_dma_config_t *i2s_config) {
  * 
  * @return void 
  */
-FUNC_ON_FLASH void i2s_dma_start() {
+ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
     init_descriptors_list();
     slc_start(dma_block_list);
-    i2s_start();
+    i2s_start(i2s_num);
 }
 
 /**
  * @brief Hàm truyền I2S qua DMA
  * 
  * @param file 
- * @return FUNC_ON_FLASH 
+ * @return void 
  */
-FUNC_ON_FLASH void i2s_audio_loop(uint8_t *p_data, uint16_t data_len) {
+ICACHE_FLASH_ATTR void i2s_dma_write(uint32_t *p_data, uint16_t data_len) {
     uint32_t timeout_queue = 1000;
     while(timeout_queue--) {
-        if(dma_queue.queue_len != 0){
+        if(dma_queue.queue_len != 0) {
             /* Disable DMA interrupt */
             disable_interrupts(INT_NUM_SLC);
             /* Lấy ra phần tử đầu */
-            uint8_t *item = dma_queue.queue[0];
+            uint32_t *item = dma_queue.queue[0];
             dma_queue.queue_len--;
             /* Dồn Queue lên đầu */
             for(uint16_t idx_queue = 0; idx_queue < dma_queue.queue_len; idx_queue++) {
                 dma_queue.queue[idx_queue] = dma_queue.queue[idx_queue + 1];
             }
             /* Đưa dữ liệu vào buffer */
-            for(uint16_t idx_data = 0; idx_data < data_len; idx_data++){
-                if(item) item[idx_data] = p_data;
+            for(uint16_t idx_data = 0; idx_data < data_len; idx_data++) {
+                if(item) item[idx_data] = p_data[idx_data];
             }
             /* Enable DMA interrupt */
             enable_interrupts(INT_NUM_SLC);

@@ -129,10 +129,10 @@ typedef struct {
 } gpio_config_t;
 
 
-void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler);
-void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction);
-void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep);
-gpio_err_t gpio_config(gpio_config_t *gpio_config);
+ICACHE_FLASH_ATTR void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler);
+ICACHE_FLASH_ATTR void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction);
+ICACHE_FLASH_ATTR void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep);
+ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config);
 
 
 

@@ -7,20 +7,15 @@
 #include "mem.h"
 
 /* Define debug logger */
-#define ANSI_COLOR_LOG      "[LOG: ]"
-#define ANSI_COLOR_ERROR    "\x1b[31m[ERROR: ]"
-#define ANSI_COLOR_DEBUG    "\x1b[33m[DEBUG: ]"
+#define ANSI_COLOR_LOG      "I "
+#define ANSI_COLOR_ERROR    "\x1b[31mE "
+#define ANSI_COLOR_DEBUG    "\x1b[33mD "
 
 #define BITS_LOG( ... )     printf(ANSI_COLOR_LOG __VA_ARGS__);
 #define BITS_LOGD( ... )    printf(ANSI_COLOR_DEBUG __VA_ARGS__); \
                             printf("\033[0m");
 #define BITS_LOGE( ... )    printf(ANSI_COLOR_ERROR __VA_ARGS__); \
                             printf("\033[0m");
-
-#define FUNC_ON_FLASH       ICACHE_FLASH_ATTR
-#define FUNC_ON_RAM         
-#define VAR_ON_FLASH        ICACHE_RODATA_ATTR
-#define VAR_ON_IRAM         
 
 #define printf              os_printf
 #define malloc              os_zalloc

@@ -25,7 +25,7 @@ static gpio_int_handler_t gpio_intr_handlers[16] = { 0 };
  * @brief Hàm phục vụ ngắt GPIO
  * 
  */
-void __attribute__((weak)) FUNC_ON_RAM gpio_int_isr(void *arg) {
+void __attribute__((weak)) gpio_int_isr(void *arg) {
     gpio_int_handler_t handler;
     uint8_t idx_gpio;
     /* Lấy tín hiệu ngắt các IO */
@@ -53,7 +53,7 @@ void __attribute__((weak)) FUNC_ON_RAM gpio_int_isr(void *arg) {
  * @param int_type Chọn kiểu ngắt GPIO
  * @param handler Handler khi có sự kiện ngắt
  */
-void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler) {
+ICACHE_FLASH_ATTR void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler) {
     /* Config handler */
     gpio_intr_handlers[gpio_num] = handler;
 
@@ -64,7 +64,7 @@ void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, 
     }
 }
 
-void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction) {
+ICACHE_FLASH_ATTR void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction) {
     if (gpio_num == 16) {
         RTC.gpio_cfg[3] = (RTC.gpio_cfg[3] & 0xffffffbc) | 1;
         RTC.gpio_conf = (RTC.gpio_conf & 0xfffffffe) | 0;
@@ -102,7 +102,7 @@ void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction) {
     }
 }
 
-void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep) {
+ICACHE_FLASH_ATTR void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep) {
     uint32_t flags = 0;
 
     if (enabled) {
@@ -114,7 +114,7 @@ void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep) 
     iomux_set_pullup_flags(gpio_2_iomux[gpio_num], flags);
 }
 
-gpio_err_t gpio_config(gpio_config_t *gpio_config) {
+ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config) {
     uint32_t gpio_mask = gpio_config->pin_bit_mask;
 
     if (gpio_config->pin_bit_mask == 0) {

@@ -163,13 +163,13 @@ typedef struct struct_iomux {
 #define IOMUX_GPIO15_FUNC_GPIO             IOMUX_FUNC(3)
 #define IOMUX_GPIO15_FUNC_UART0_RTS        IOMUX_FUNC(4)
 
-extern VAR_ON_IRAM uint8_t iomux_2_gpio[16];
-extern VAR_ON_IRAM uint8_t gpio_2_iomux[16];
+extern const uint8_t iomux_2_gpio[16];
+extern const uint8_t gpio_2_iomux[16];
 
 
-void iomux_set_pullup_flags(uint8_t iomux_num, uint32_t pullup_flags);
-void iomux_set_gpio_function(uint8_t idx_gpio, bool output_enable);
-void iomux_set_function(uint8_t iomux_num, uint32_t iomux_func);
-void iomux_set_direction_flags(uint8_t iomux_num, uint32_t dir_flags);
+ICACHE_FLASH_ATTR void iomux_set_pullup_flags(uint8_t iomux_num, uint32_t pullup_flags);
+ICACHE_FLASH_ATTR void iomux_set_gpio_function(uint8_t idx_gpio, bool output_enable);
+ICACHE_FLASH_ATTR void iomux_set_function(uint8_t iomux_num, uint32_t iomux_func);
+ICACHE_FLASH_ATTR void iomux_set_direction_flags(uint8_t iomux_num, uint32_t dir_flags);
 
 #endif /* __ESP8266_IOMUX_H */
