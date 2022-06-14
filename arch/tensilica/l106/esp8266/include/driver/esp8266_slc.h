@@ -546,9 +546,9 @@ typedef struct struct_dma_descriptor {
 
 typedef void (*slc_handler_isr)(void *);
 
-FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg);
-FUNC_ON_FLASH void slc_start(dma_descriptor_t *descr);
-FUNC_ON_FLASH void slc_stop(void);
+ICACHE_FLASH_ATTR void slc_init(slc_handler_isr slc_isr, void *arg);
+ICACHE_FLASH_ATTR void slc_start(dma_descriptor_t *descr);
+ICACHE_FLASH_ATTR void slc_stop(void);
 
 
 #endif /* __ESP8266_SLC_H */

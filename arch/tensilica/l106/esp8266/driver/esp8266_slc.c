@@ -16,7 +16,7 @@
  * @brief Hàm khởi tạo DMA
  * 
  */
-FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg) {
+ICACHE_FLASH_ATTR void slc_init(slc_handler_isr slc_isr, void *arg) {
     /* Vô hiệu hóa ngắt DMA */
     disable_interrupts(INT_NUM_SLC);
 
@@ -26,6 +26,7 @@ FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg) {
 
     /* Xóa cờ ngắt DMA */
     SLC->int_clr.val = 0xFFFFFFFF;
+    SLC->int_clr.val = 0;
 
     /* Enable DMA */
     SLC->conf0.val &= ~(SLC_CONF0_MODE_MASK);
@@ -39,8 +40,8 @@ FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg) {
 
     if(slc_isr) {
         register_interrupts(INT_NUM_SLC, slc_isr, arg);
+        SLC->int_ena.rx_eof = 1;
         SLC->int_clr.val = 0xFFFFFFFF;
-        SLC->int_ena.val |= SLC_INT_ENABLE_RX_EOF;
         enable_interrupts(INT_NUM_SLC);
     }
     /* Luôn luôn cho phép DMA Tx_link chạy */
@@ -50,19 +51,19 @@ FUNC_ON_FLASH void slc_init(slc_handler_isr slc_isr, void *arg) {
 }
 
 /**
- * @brief Hàm cho phép chạy DMA
+ * @brief Cho phép chạy DMA
  * 
  * @param descr Cấu trúc mô tả truyền DMA
  */
-FUNC_ON_FLASH void slc_start(dma_descriptor_t *descr) {
+ICACHE_FLASH_ATTR void slc_start(dma_descriptor_t *descr) {
     SLC->rx_link.val &= ~SLC_RX_LINK_DESCRIPTOR_ADDR_MASK;
     SLC->rx_link.val |= (((uint32_t)descr) << SLC_RX_LINK_DESCRIPTOR_ADDR_POS);
 }
 
 /**
- * @brief Hàm dừng truyền DMA
+ * @brief Dừng truyền DMA
  * 
  */
-FUNC_ON_FLASH void slc_stop(void) {
+ICACHE_FLASH_ATTR void slc_stop(void) {
     SLC->rx_link.val &= ~SLC_RX_LINK_DESCRIPTOR_ADDR_MASK;
 }
