@@ -47,14 +47,14 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_
 FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
     int16_t channel[2] = {0, 0};
     uint32_t r_l_number = 0;
-    /* Tính số byte còn lại, chưa đọc */
+    /* Tính số byte còn lại (Bytes chưa đọc) */
     uint32_t remaining = ((dev->file_ptr + 44) + dev->file_size) - dev->read_curr_ptr;
     if(dev->num_channel == 2) {
         r_l_number = (remaining / 2) / (dev->bits_per_sample);
     }
     /* Giới hạn cặp sample (R+L) */
-    if(remaining > CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) remaining = CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ;
-    else if(remaining == 0) return audio_gen_wav_file_end;
+    if(r_l_number > CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) r_l_number = CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ;
+    else if(r_l_number == 0) return audio_gen_wav_file_end;
     // BITS_LOG("Sample can read: %d\r\n", remaining);
     /* Lấy data sample từ buffer */
     for(uint16_t idx_RL = 0; idx_RL < r_l_number; idx_RL++) {

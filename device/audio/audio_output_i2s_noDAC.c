@@ -52,9 +52,9 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
     for(uint16_t index_sample = 0; index_sample < num_sample; index_sample++) {
         // Tính trung bình 2 giá trị LR
         sum = (((int32_t)sample[index_sample * 2]) + ((int32_t)sample[index_sample * 2 + 1])) >> 1;
-        BITS_LOG("Sample %d: %d -- %d, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
+        // BITS_LOG("Sample %d: %d -- %d, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
         new_sample = ( (int32_t)i2s_no_dac_amplify(sum) ) << 8;
-        printf("New samp: %d, ", new_sample);
+        // printf("New samp: %d, ", new_sample);
         // How much the comparison signal changes each oversample step
         diffPerStep = (new_sample - dev->last_sample) >> 5;
         // Don't need last_sample anymore, store this one for next round
@@ -72,7 +72,7 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
             new_sample += diffPerStep; // Move the reference signal towards destination
         }
         delta_buff[index_sample] = bits;
-        printf("dsbuff: %x\n", delta_buff[index_sample]);
+        // printf("dsbuff: %x\n", delta_buff[index_sample]);
         dev->index_sample++;
     }
 }
@@ -97,7 +97,6 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, in
         return audio_output_sample_err;
     }
     for(uint16_t index_sample = 0; index_sample < num_sample; index_sample++) {
-        BITS_LOG("Pre sample: %d --- %d\r\n", sample[index_sample], sample[index_sample * 2 + 1]);
         if(dev->i2s_config.bits_per_sample == I2S_BITS_PER_SAMPLE_8BIT){
             temp_sample[index_sample * 2] = (sample[index_sample * 2] - 128);
             temp_sample[index_sample * 2 + 1] = (sample[index_sample * 2 + 1] - 128);
@@ -111,6 +110,6 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, in
     i2s_no_dac_deltasigma(dev, sample, delta_buff, num_sample);
 
     i2s_write_buffer(delta_buff, num_sample);
-    BITS_LOG("I2s Byte Writen: %d!!\r\n", dev->byte_written);
+    // BITS_LOG("I2s Byte Writen: %d!!\r\n", dev->byte_written);
     return true;
 }
