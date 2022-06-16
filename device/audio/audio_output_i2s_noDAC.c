@@ -1,7 +1,12 @@
 #include "audio_output_i2s_noDAC.h"
 #include <string.h>
 
-
+/**
+ * @brief Khởi tạo Driver
+ * 
+ * @param dev 
+ * @return audio_output_stt_t 
+ */
 audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
     dev->last_sample = 0;
     dev->cum_error = 0;
@@ -11,6 +16,15 @@ audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
     return audio_output_ok;
 }
 
+/**
+ * @brief Cấu hình Driver
+ * 
+ * @param dev 
+ * @param num_channel 
+ * @param sample_rate 
+ * @param bit_per_sample 
+ * @return FUNC_ON_FLASH 
+ */
 FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uint32_t sample_rate, uint8_t bit_per_sample) {
     os_printf("config: %d, %d, %d\n", num_channel, sample_rate, bit_per_sample);
 
@@ -18,7 +32,7 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t nu
         .mode = I2S_MODE_MASTER | I2S_MODE_TX,
         .sample_rate = sample_rate,
         .bits_per_sample = bit_per_sample,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+        .channel_format = (num_channel == 2)? I2S_CHANNEL_FMT_RIGHT_LEFT : I2S_CHANNEL_FMT_ONLY_RIGHT,
         .communication_format = I2S_COMM_FORMAT_I2S,
         .dma_buf_count = 2,
         .dma_buf_len = 8
@@ -31,8 +45,6 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t nu
     };
     i2s_dma_init(0, &dev->i2s_config, &pin_config);
     i2s_dma_start(0);
-    // i2s_driver_install(0, &dev->i2s_config, 0, NULL);
-    // i2s_set_pin(0, &pin_config);
     BITS_LOG("Config I2S OK!\r\n");
     return audio_output_ok;
 }
@@ -50,11 +62,12 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
     int32_t diffPerStep;
     uint32_t bits = 0;
     for(uint16_t index_sample = 0; index_sample < num_sample; index_sample++) {
-        // Tính trung bình 2 giá trị LR
+        BITS_LOG("Sample %d: %d -- %d, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
+        /* Tính trung bình 2 giá trị LR */
         sum = (((int32_t)sample[index_sample * 2]) + ((int32_t)sample[index_sample * 2 + 1])) >> 1;
-        // BITS_LOG("Sample %d: %d -- %d, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
+        printf("sum: %x ; ", sum);
         new_sample = ( (int32_t)i2s_no_dac_amplify(sum) ) << 8;
-        // printf("New samp: %d, ", new_sample);
+        printf("New samp: %x, ", new_sample);
         // How much the comparison signal changes each oversample step
         diffPerStep = (new_sample - dev->last_sample) >> 5;
         // Don't need last_sample anymore, store this one for next round
@@ -72,24 +85,24 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
             new_sample += diffPerStep; // Move the reference signal towards destination
         }
         delta_buff[index_sample] = bits;
-        // printf("dsbuff: %x\n", delta_buff[index_sample]);
+        printf("dsbuff: %x\n", delta_buff[index_sample]);
         dev->index_sample++;
     }
 }
 
-FUNC_ON_FLASH void i2s_make_sample_stereo16(i2s_no_dac_t *dev, int16_t *sample){
+FUNC_ON_FLASH void i2s_make_sample_stereo16(i2s_no_dac_t *dev, uint16_t *sample_r,  uint16_t *sample_l){
     if (dev->i2s_config.channel_format >= I2S_CHANNEL_FMT_ONLY_RIGHT){
-        sample[1] = sample[0];
+        sample_r[0] = sample_l[0];
     }
     if (dev->i2s_config.bits_per_sample == I2S_BITS_PER_SAMPLE_8BIT) {
-        sample[0] = (((int16_t)(sample[0]&0xff)) - 128) << 8;
-        sample[1] = (((int16_t)(sample[1]&0xff)) - 128) << 8;
+        sample_r[0] = (((int16_t)(sample_r[0]&0xff)) - 128) << 8;
+        sample_l[0] = (((int16_t)(sample_l[0]&0xff)) - 128) << 8;
     }
 
 }
 
 FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, int16_t *sample, uint16_t num_sample) {
-    uint32_t delta_buff[num_sample * 2];
+    uint32_t delta_buff[num_sample];
     int16_t temp_sample[num_sample * 2];
 
     if(sample == ((void *)0)){
@@ -97,17 +110,14 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, in
         return audio_output_sample_err;
     }
     for(uint16_t index_sample = 0; index_sample < num_sample; index_sample++) {
-        if(dev->i2s_config.bits_per_sample == I2S_BITS_PER_SAMPLE_8BIT){
-            temp_sample[index_sample * 2] = (sample[index_sample * 2] - 128);
-            temp_sample[index_sample * 2 + 1] = (sample[index_sample * 2 + 1] - 128);
-        }
-        else if(dev->i2s_config.bits_per_sample == I2S_BITS_PER_SAMPLE_16BIT){
-            temp_sample[index_sample * 2] = (sample[index_sample * 2] - 32768) << 16;
-            temp_sample[index_sample * 2 + 1] = (sample[index_sample * 2 + 1] - 32768) << 16;
-        }
+        temp_sample[index_sample * 2] = sample[index_sample * 2];
+        temp_sample[index_sample * 2 + 1] = sample[index_sample * 2 + 1];
+        BITS_LOG("Pre sample: %d - %d\r\n", temp_sample[index_sample * 2], temp_sample[index_sample * 2 + 1]);
+        i2s_make_sample_stereo16(dev, &temp_sample[index_sample * 2], &temp_sample[index_sample * 2 + 1]);
+        BITS_LOG("Apter make sample: %d - %d\r\n", temp_sample[index_sample * 2], temp_sample[index_sample * 2 + 1]);
     }
 
-    i2s_no_dac_deltasigma(dev, sample, delta_buff, num_sample);
+    i2s_no_dac_deltasigma(dev, temp_sample, delta_buff, num_sample);
 
     i2s_write_buffer(delta_buff, num_sample);
     // BITS_LOG("I2s Byte Writen: %d!!\r\n", dev->byte_written);

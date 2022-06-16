@@ -8,7 +8,7 @@
 #include "audio_output.h"
 #include "audio_output_i2s_noDAC.h"
 
-#define CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ   (8)
+#define CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ   (DMA_BUFFER_SIZE)
 
 typedef enum {
     audio_gen_wav_ok,
@@ -28,6 +28,7 @@ typedef struct {
     uint8_t *file_ptr;
     uint8_t *read_curr_ptr;
     
+    uint32_t num_sample_reading;
     /**
      * @brief Cờ báo dùng trong chương trình
      * 

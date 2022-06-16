@@ -44,31 +44,36 @@ ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2
     /* enable clock to i2s subsystem */
     i2c_writeReg_Mask_def(i2c_bbpll, i2c_bbpll_en_audio_clock_out, 1);
 
+    /* Clear all interrupt */
     I2S[i2s_num]->int_clr.val = I2S_INT_CLEAR_MASK;
+    /* Disable all interrupt I2S */
     I2S[i2s_num]->int_ena.val = 0;
     
     /* reset I2S subsystem */
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_RESET_MASK;
-    I2S[i2s_num]->conf.val |= I2S_CONF_RESET_MASK;
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_RESET_MASK;
+    I2S[i2s_num]->conf.val &= ~0x0F;
+    I2S[i2s_num]->conf.val |= 0x0F;
+    I2S[i2s_num]->conf.val &= ~0x0F;
 
     /* select 16bits per channel (FIFO_MOD=0), no DMA access (FIFO only) */
-    I2S[i2s_num]->fifo_conf.val &= ~I2S_FIFO_CONF_DESCRIPTOR_ENABLE;
-    I2S[i2s_num]->fifo_conf.val &= ~I2S_FIFO_CONF_RX_FIFO_MOD_MASK;
-    I2S[i2s_num]->fifo_conf.val &= ~I2S_FIFO_CONF_TX_FIFO_MOD_MASK;
+    I2S[i2s_num]->fifo_conf.dscr_en = 0;
+    I2S[i2s_num]->fifo_conf.tx_fifo_mod = 0;
+    I2S[i2s_num]->fifo_conf.rx_fifo_mod = 0;
 
-    /* Set Channel = 0 */
-    I2S[i2s_num]->conf_chan.val &= ~(I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK | I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK);
+    if(i2s_config->bits_per_sample == 24) {
+        I2S[i2s_num]->fifo_conf.tx_fifo_mod = 2;
+        I2S[i2s_num]->fifo_conf.rx_fifo_mod = 2;
+    }
 
-    /* trans master and receiv slave, MSB shift, right_first, msb right */
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_TX_SLAVE_MOD;
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_BITS_MOD_MASK;
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_BCK_DIV_MASK;
-    I2S[i2s_num]->conf.val &= ~I2S_CONF_CLKM_DIV_MASK;
+    /* Dual channel mode */
+    I2S[i2s_num]->conf_chan.tx_chan_mod = 0;
+    I2S[i2s_num]->conf_chan.rx_chan_mod = 0;
 
-    I2S[i2s_num]->conf.val |= I2S_CONF_RIGHT_FIRST | I2S_CONF_MSB_RIGHT | I2S_CONF_RX_SLAVE_MOD | I2S_CONF_RX_MSB_SHIFT | I2S_CONF_TX_MSB_SHIFT;
-    i2s_set_rate(i2s_num, i2s_config->sample_rate);
-    i2s_set_channel(i2s_num, i2s_config->channel_format, i2s_config->bits_per_sample);
+    i2s_set_rate(i2s_num, i2s_config->sample_rate, i2s_config->bits_per_sample);
+    // i2s_set_channel(i2s_num, i2s_config->channel_format, i2s_config->bits_per_sample);
+
+    I2S[i2s_num]->conf.tx_start = 1;
+    I2S[i2s_num]->conf.tx_reset = 0;
+    // I2S[i2s_num]->conf.tx_reset = 1;
 }
 
 /**
@@ -131,11 +136,10 @@ ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins)
  * @param rate sample rate
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate) {
+ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate, uint8_t bits_per_samp) {
     uint8_t bck_div = 1;
     uint8_t mclk_div = 1;
-
-    uint32_t scaled_base_freq = I2S_BASE_CLK / (16 * 2);
+    uint32_t scaled_base_freq = I2S_BASE_CLK / (bits_per_samp * 2);
     float delta_best = scaled_base_freq;
 
     for (uint8_t i = 1; i < 64; i++) {
@@ -151,36 +155,88 @@ ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate) {
     }
 
     I2S_ENTER_CRITICAL();
-    I2S[i2s_num]->conf.bck_div_num = bck_div & 0x3F;
-    I2S[i2s_num]->conf.clkm_div_num = mclk_div & 0x3F;
+    i2s_set_dividers(i2s_num, bck_div, mclk_div);
     I2S_EXIT_CRITICAL();
 }
 
+/**
+ * @brief Cấu hình bộ chia clock I2S
+ * 
+ * @param i2s_num số port I2S
+ * @param bck_div 
+ * @param mclk_div 
+ * @return ICACHE_FLASH_ATTR 
+ */
+ICACHE_FLASH_ATTR void i2s_set_dividers(i2s_port_t i2s_num, uint8_t bck_div, uint8_t mclk_div) {
+    /* Kích thước divx không lớn hơn 0x3F */
+    bck_div &= 0x3F;
+    mclk_div &= 0x3F;
+
+    /* Giữ trạng thái reset của Tx */
+    I2S[i2s_num]->conf.tx_reset = 1;
+    /* Trans_master (active low) */
+    I2S[i2s_num]->conf.tx_slave_mod = 0;
+    /* Recv_master (active low) */ 
+    I2S[i2s_num]->conf.rx_slave_mod = 0;
+    /* bits_mod (16bit / channel) */
+    I2S[i2s_num]->conf.bits_mod = 0;
+    /* clear clock div */
+    I2S[i2s_num]->conf.bck_div_num = 0;
+    I2S[i2s_num]->conf.clkm_div_num = 0;
+
+    /* Send or recv right channel first */
+    I2S[i2s_num]->conf.right_first = 1;
+    /* MSB recv or transmit first */
+    I2S[i2s_num]->conf.msb_right = 1;
+    /* 1-bit delay from ws to MSB (I2S format) */
+    I2S[i2s_num]->conf.rx_msb_shift = 1;
+    I2S[i2s_num]->conf.tx_msb_shift = 1;
+    /* Set div clock */
+    I2S[i2s_num]->conf.bck_div_num = bck_div;
+    I2S[i2s_num]->conf.clkm_div_num = mclk_div;
+    /* Thoát reset */
+    I2S[i2s_num]->conf.tx_reset = 0;
+}
 /**
  * @brief Cấu hình sample rate I2S, phải dừng I2S trước khi chạy func này
  * 
  * @param rate sample rate
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_set_channel(i2s_port_t i2s_num, i2s_channel_fmt_t ch_fmt, i2s_bits_per_sample_t bits) {
-    uint32_t cur_mode = I2S[0]->fifo_conf.tx_fifo_mod;
-    
+ICACHE_FLASH_ATTR void i2s_set_channel(i2s_port_t i2s_num, i2s_channel_fmt_t ch_fmt, i2s_bits_per_sample_t bits) {    
     uint8_t ch = (ch_fmt < I2S_CHANNEL_FMT_ONLY_RIGHT)? I2S_CHANNEL_STEREO : I2S_CHANNEL_MONO;
 
-    I2S[i2s_num]->fifo_conf.tx_fifo_mod = (ch == 2) ? cur_mode - 1 : cur_mode + 1;
-    cur_mode = I2S[i2s_num]->fifo_conf.rx_fifo_mod;
-    I2S[i2s_num]->fifo_conf.rx_fifo_mod = (ch == 2) ? cur_mode - 1  : cur_mode + 1;
-    I2S[i2s_num]->conf_chan.tx_chan_mod = (ch == 2) ? 0 : 1;
-    I2S[i2s_num]->conf_chan.rx_chan_mod = (ch == 2) ? 0 : 1;
-
-    if ((past_bits <= 16) && (bits > 16)) {
-        I2S[i2s_num]->fifo_conf.tx_fifo_mod += 2;
-        I2S[i2s_num]->fifo_conf.rx_fifo_mod += 2;
-    } else if (past_bits > 16 && bits <= 16) {
-        I2S[i2s_num]->fifo_conf.tx_fifo_mod -= 2;
-        I2S[i2s_num]->fifo_conf.rx_fifo_mod -= 2;
+    switch (bits) {
+        case 8:{
+            I2S[i2s_num]->fifo_conf.tx_fifo_mod = 0;
+            I2S[i2s_num]->fifo_conf.rx_fifo_mod = 0;
+            break;
+        }
+        case 16:{
+            I2S[i2s_num]->fifo_conf.tx_fifo_mod = 2;
+            I2S[i2s_num]->fifo_conf.rx_fifo_mod = 2;
+            break;
+        }
+        case 24:{
+            I2S[i2s_num]->fifo_conf.tx_fifo_mod = 4;
+            I2S[i2s_num]->fifo_conf.rx_fifo_mod = 4;
+            break;
+        }
     }
-    past_bits = bits;
+    I2S[i2s_num]->conf.bits_mod = bits;
+
+    if((ch == 2)) {
+        I2S[i2s_num]->fifo_conf.tx_fifo_mod &= ~1;
+        I2S[i2s_num]->fifo_conf.rx_fifo_mod &= ~1;
+        I2S[i2s_num]->conf_chan.tx_chan_mod &= ~1;
+        I2S[i2s_num]->conf_chan.rx_chan_mod &= ~1;
+    }
+    else {
+        I2S[i2s_num]->fifo_conf.tx_fifo_mod |= 1;
+        I2S[i2s_num]->fifo_conf.rx_fifo_mod |= 1;
+        I2S[i2s_num]->conf_chan.tx_chan_mod |= 1;
+        I2S[i2s_num]->conf_chan.rx_chan_mod |= 1;
+    }
 }
 
 /**

@@ -19,6 +19,8 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_openfile(audio_gen_wav_t *dev, u
     dev->file_size = (*(file_buf + 43) << 24) | (*(file_buf + 42) << 16) | (*(file_buf + 41) << 8) | *(file_buf + 40);      // Vị trí kích thước data
     dev->read_curr_ptr = (file_buf + 44);                                   // Vị trí data
     if((dev->bits_per_sample != 16) && (dev->bits_per_sample != 24) && (dev->bits_per_sample != 32)) return audio_gen_wav_file_error;
+    
+    dev->num_sample_reading = 1;
     return audio_gen_wav_ok;
 }
 
@@ -105,6 +107,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
         /* Tăng con trỏ dữ liệu */
         dev->read_curr_ptr += ((dev->bits_per_sample * dev->num_channel) / 8);
     }
+    dev->num_sample_reading += r_l_number;
     return audio_gen_wav_file_reading;
 }
 /**
@@ -124,7 +127,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev)
  * @return audio_gen_wav_stt_t 
  */
 FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
-    if (dev->driver->consume(dev->driver, dev->last_sample, CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) == audio_output_sample_err) {
+    if (dev->driver->consume(dev->driver, dev->last_sample, dev->num_sample_reading) == audio_output_sample_err) {
         return audio_gen_wav_stopped;
     }
     if (audio_get_next_data(dev) == audio_gen_wav_file_end) {

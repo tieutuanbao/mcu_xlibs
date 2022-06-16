@@ -27,25 +27,25 @@ typedef struct struct_i2s {
     volatile uint32_t rxfifo;           // 0x04
     union {
         volatile struct {
-            uint32_t tx_reset:       1;
-            uint32_t rx_reset:       1;
-            uint32_t tx_fifo_reset:  1;
-            uint32_t rx_fifo_reset:  1;
-            uint32_t tx_slave_mod:   1;
-            uint32_t rx_slave_mod:   1;
-            uint32_t right_first:    1;
-            uint32_t msb_right:      1;
-            uint32_t tx_start:       1;
-            uint32_t rx_start:       1;
-            uint32_t tx_msb_shift:   1;
-            uint32_t rx_msb_shift:   1;
-            uint32_t bits_mod:       4;
-            uint32_t clkm_div_num:   6;
-            uint32_t bck_div_num:    6;
-            uint32_t reserved28:     4;
+            uint32_t tx_reset:       1;     // bit 0
+            uint32_t rx_reset:       1;     // bit 1
+            uint32_t tx_fifo_reset:  1;     // bit 2
+            uint32_t rx_fifo_reset:  1;     // bit 3
+            uint32_t tx_slave_mod:   1;     // bit 4
+            uint32_t rx_slave_mod:   1;     // bit 5
+            uint32_t right_first:    1;     // bit 6
+            uint32_t msb_right:      1;     // bit 7
+            uint32_t tx_start:       1;     // bit 8
+            uint32_t rx_start:       1;     // bit 9
+            uint32_t tx_msb_shift:   1;     // bit 10
+            uint32_t rx_msb_shift:   1;     // bit 11
+            uint32_t bits_mod:       4;     // bit 12 : 15
+            uint32_t clkm_div_num:   6;     // bit 16 : 21
+            uint32_t bck_div_num:    6;     // bit 22 : 27
+            uint32_t reserved28:     4;     // bit 28 : 31
         };
         volatile uint32_t val;
-    } conf;
+    } conf;    // 0x08
     union {
         volatile struct {
             uint32_t rx_take_data:  1;
@@ -57,7 +57,7 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_raw;
+    } int_raw;    // 0x0C
     union {
         struct {
             uint32_t rx_take_data:  1;
@@ -69,7 +69,7 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         uint32_t val;
-    } int_st;
+    } int_st;    // 0x10
     union {
         volatile struct {
             uint32_t rx_take_data:  1;
@@ -81,7 +81,7 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_ena;
+    } int_ena;    // 0x14
     union {
         volatile struct {
             uint32_t rx_take_data:  1;
@@ -93,7 +93,7 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_clr;
+    } int_clr;    // 0x18
     union {
         volatile struct {
             uint32_t tx_bck_in_delay:   2;
@@ -112,28 +112,28 @@ typedef struct struct_i2s {
             uint32_t reserved23:        9;
         };
         volatile uint32_t val;
-    } timing;
+    } timing;    // 0x1C
     union {
         volatile struct {
-            uint32_t rx_data_num:          6;
-            uint32_t tx_data_num:          6;
-            uint32_t dscr_en:              1;
-            uint32_t tx_fifo_mod:          3;
-            uint32_t rx_fifo_mod:          3;
-            uint32_t reserved19:          13;
+            uint32_t rx_data_num:          6;   // bit 0 : 5
+            uint32_t tx_data_num:          6;   // bit 6 : 11
+            uint32_t dscr_en:              1;   // bit 12
+            uint32_t tx_fifo_mod:          3;   // bit 13 : 15
+            uint32_t rx_fifo_mod:          3;   // bit 16 : 18
+            uint32_t reserved19:          13;   // bit 19 : 31
         };
         volatile uint32_t val;
-    } fifo_conf;
-    volatile uint32_t rx_eof_num;
-    volatile uint32_t conf_single_data;
+    } fifo_conf;    // 0x20
+    volatile uint32_t rx_eof_num;    // 0x24
+    volatile uint32_t conf_single_data;    // 0x28
     union {
         volatile struct {
-            uint32_t tx_chan_mod: 3;
-            uint32_t rx_chan_mod: 2;
-            uint32_t reserved5:  27;
+            uint32_t tx_chan_mod: 3;   // bit 0 : 2
+            uint32_t rx_chan_mod: 2;   // bit 3 : 4
+            uint32_t reserved5:  27;   // bit 5 : 31
         };
         volatile uint32_t val;
-    } conf_chan;
+    } conf_chan;    // 0x2C
 } i2s_t;
 
 #ifndef i2c_bbpll
@@ -327,7 +327,8 @@ ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2
 ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins);
 ICACHE_FLASH_ATTR i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq);
 ICACHE_FLASH_ATTR void i2s_set_channel(i2s_port_t i2s_num, i2s_channel_fmt_t ch_fmt, i2s_bits_per_sample_t bits);
-ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate);
+ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate, uint8_t bits_per_samp);
+ICACHE_FLASH_ATTR void i2s_set_dividers(i2s_port_t i2s_num, uint8_t bck_div, uint8_t mclk_div);
 ICACHE_FLASH_ATTR void i2s_start(i2s_port_t i2s_num);
 ICACHE_FLASH_ATTR void i2s_stop(i2s_port_t i2s_num);
 
