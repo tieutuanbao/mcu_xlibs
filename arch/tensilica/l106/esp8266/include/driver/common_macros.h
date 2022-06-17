@@ -28,27 +28,6 @@
 
 #define rand()  os_random()
 
-#define PERIPHS_IO_MUX_MTCK_U           (PERIPHS_IO_MUX + 0x08)
-#define FUNC_MTCK                           0
-#define FUNC_I2SI_BCK                       1
-#define FUNC_HSPID_MOSI                     2
-#define FUNC_GPIO13                         3
-#define FUNC_UART0_CTS                      4
-
-#define PERIPHS_IO_MUX_MTMS_U           (PERIPHS_IO_MUX + 0x0C)
-#define FUNC_MTMS                           0
-#define FUNC_I2SI_WS                        1
-#define FUNC_HSPI_CLK                       2
-#define FUNC_GPIO14                         3
-#define FUNC_UART0_DSR                      4
-
-#define PERIPHS_IO_MUX_MTDI_U           (PERIPHS_IO_MUX + 0x04)
-#define FUNC_MTDI                           0
-#define FUNC_I2SI_DATA                      1
-#define FUNC_HSPIQ_MISO                     2
-#define FUNC_GPIO12                         3
-#define FUNC_UART0_DTR                      4
-
 #define ETS_SLC_INTR_ATTACH(func, arg) \
     ets_isr_attach(INT_NUM_SLC, (ets_isr_t)(func), (void *)(arg))
 

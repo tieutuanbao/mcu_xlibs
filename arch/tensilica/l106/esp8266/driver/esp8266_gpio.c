@@ -66,16 +66,16 @@ ICACHE_FLASH_ATTR void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int
 
 ICACHE_FLASH_ATTR void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction) {
     if (gpio_num == 16) {
-        RTC.gpio_cfg[3] = (RTC.gpio_cfg[3] & 0xffffffbc) | 1;
-        RTC.gpio_conf = (RTC.gpio_conf & 0xfffffffe) | 0;
+        RTC->gpio_cfg[3] = (RTC->gpio_cfg[3] & 0xffffffbc) | 1;
+        RTC->gpio_conf = (RTC->gpio_conf & 0xfffffffe) | 0;
         switch (direction) {
             case GPIO_DIR_INPUT:{
-                RTC.gpio_enable = (RTC.gpio_out & 0xfffffffe);
+                RTC->gpio_enable = (RTC->gpio_out & 0xfffffffe);
                 break;
             }
             case GPIO_DIR_OUTPUT:
             case GPIO_DIR_OPEN_DRAIN:{
-                RTC.gpio_enable = (RTC.gpio_out & 0xfffffffe) | 1;
+                RTC->gpio_enable = (RTC->gpio_out & 0xfffffffe) | 1;
                 break;
             }
         }
@@ -127,7 +127,7 @@ ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config) {
         if((gpio_mask & (1U << idx_gpio))){
             if(RTC_GPIO_IS_VALID_GPIO(idx_gpio)){
                 if(gpio_config->dir == GPIO_DIR_OUTPUT){
-                    RTC.gpio_cfg[3] =  (((RTC.gpio_cfg[3] & (uint32_t)0xFFFFFFBC)) | 1U);
+                    RTC->gpio_cfg[3] =  (((RTC->gpio_cfg[3] & (uint32_t)0xFFFFFFBC)) | 1U);
                 }
                 if ((gpio_config->dir == GPIO_DIR_OPEN_DRAIN) && !RTC_GPIO_IS_VALID_GPIO(idx_gpio)) {
                     GPIO->pin[idx_gpio].driver = 1;

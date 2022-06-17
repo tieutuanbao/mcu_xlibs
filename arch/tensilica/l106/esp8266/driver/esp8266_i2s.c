@@ -11,7 +11,6 @@
 
 #include "esp8266_i2s.h"
 #include "esp8266_iomux.h"
-#include "esp8266_sdk_function.h"
 #include "esp8266_interrupt.h"
 #include <math.h>
 
@@ -21,14 +20,7 @@
 #define I2S_ENTER_CRITICAL()                disable_all_interrupts()
 #define I2S_EXIT_CRITICAL()                 allow_interrupts()
 
-#define i2c_writeReg_Mask(block, host_id, reg_add, Msb, Lsb, indata) \
-        rom_i2c_writeReg_Mask(block, host_id, reg_add, Msb, Lsb, indata)
-
-#define i2c_writeReg_Mask_def(block, reg_add, indata) \
-        i2c_writeReg_Mask(block, block##_hostid,  reg_add,  reg_add##_msb, reg_add##_lsb,  indata)
-
-
-i2s_t *I2S[I2S_NUM_MAX] = {I2S0};
+volatile i2s_t *I2S[I2S_NUM_MAX] = {I2S0};
 
 i2s_bits_per_sample_t past_bits = 0;
 int past_rate = 0;
@@ -44,6 +36,12 @@ ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2
     /* enable clock to i2s subsystem */
     i2c_writeReg_Mask_def(i2c_bbpll, i2c_bbpll_en_audio_clock_out, 1);
 
+    /* Reset FIFO */
+    I2S[i2s_num]->conf.rx_fifo_reset = 1;
+    I2S[i2s_num]->conf.rx_fifo_reset = 0;
+    I2S[i2s_num]->conf.tx_fifo_reset = 1;
+    I2S[i2s_num]->conf.tx_fifo_reset = 0;
+
     /* Clear all interrupt */
     I2S[i2s_num]->int_clr.val = I2S_INT_CLEAR_MASK;
     /* Disable all interrupt I2S */
@@ -56,8 +54,52 @@ ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2
 
     /* select 16bits per channel (FIFO_MOD=0), no DMA access (FIFO only) */
     I2S[i2s_num]->fifo_conf.dscr_en = 0;
-    I2S[i2s_num]->fifo_conf.tx_fifo_mod = 0;
-    I2S[i2s_num]->fifo_conf.rx_fifo_mod = 0;
+
+    I2S[i2s_num]->conf_chan.tx_chan_mod = i2s_config->channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? i2s_config->channel_format : (i2s_config->channel_format >> 1); // 0-two channel;1-right;2-left;3-righ;4-left
+    I2S[i2s_num]->fifo_conf.tx_fifo_mod = i2s_config->channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 0 : 1; // 0-right&left channel;1-one channel
+
+    I2S[i2s_num]->conf_chan.rx_chan_mod = i2s_config->channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? i2s_config->channel_format : (i2s_config->channel_format >> 1); // 0-two channel;1-right;2-left;3-righ;4-left
+    I2S[i2s_num]->fifo_conf.rx_fifo_mod = i2s_config->channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 0 : 1; // 0-right&left channel;1-one channel
+
+    /* Connect DMA to FIFO */
+    I2S[i2s_num]->fifo_conf.dscr_en = 1;
+
+    I2S[i2s_num]->conf.tx_start = 0;
+    I2S[i2s_num]->conf.rx_start = 0;
+
+    I2S[i2s_num]->conf.msb_right = 1;
+    I2S[i2s_num]->conf.right_first = 1;
+
+    if (i2s_config->mode & I2S_MODE_TX) {
+        I2S[i2s_num]->conf.tx_slave_mod = 0; // Master
+
+        if (i2s_config->mode & I2S_MODE_SLAVE) {
+            I2S[i2s_num]->conf.tx_slave_mod = 1;// TX Slave
+        }
+    }
+
+    if (i2s_config->mode & I2S_MODE_RX) {
+        I2S[i2s_num]->conf.rx_slave_mod = 0; // Master
+
+        if (i2s_config->mode & I2S_MODE_SLAVE) {
+            I2S[i2s_num]->conf.rx_slave_mod = 1;// RX Slave
+        }
+    }
+
+    if (i2s_config->communication_format & I2S_COMM_FORMAT_I2S) {
+        I2S[i2s_num]->conf.tx_msb_shift = 1;
+        I2S[i2s_num]->conf.rx_msb_shift = 1;
+
+        if (i2s_config->communication_format & I2S_COMM_FORMAT_I2S_LSB) {
+            if (i2s_config->mode & I2S_MODE_TX) {
+                I2S[i2s_num]->conf.tx_msb_shift = 0;
+            }
+
+            if (i2s_config->mode & I2S_MODE_RX) {
+                I2S[i2s_num]->conf.rx_msb_shift = 0;
+            }
+        }
+    }
 
     if(i2s_config->bits_per_sample == 24) {
         I2S[i2s_num]->fifo_conf.tx_fifo_mod = 2;
@@ -76,37 +118,6 @@ ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2
     // I2S[i2s_num]->conf.tx_reset = 1;
 }
 
-/**
- * @brief Tính bộ chia dựa vào clock I2S mong muốn
- * Sử dụng hàm này tính toán bộ chia clock I2S để đưa vào i2s_init
- * 
- * @param freq Tần số bộ I2S mong muốn
- * @return i2s_clock_div_t 
- */
-ICACHE_FLASH_ATTR uint32_t abs(int32_t x){
-    if(x < 0) return 0 - x;
-    return x;
-}
-ICACHE_FLASH_ATTR i2s_clock_div_t i2s_freq_to_clock_div(int32_t freq) {
-    i2s_clock_div_t div = {0, 0};
-    int32_t best_freq = 0;
-    int32_t curr_freq = 0;
-    for (uint32_t bclk_div = 1; bclk_div < 64; bclk_div++) {
-        for (uint32_t clkm_div = 1; clkm_div < 64; clkm_div++) {
-            curr_freq = ets_get_cpu_frequency() / (bclk_div * clkm_div);
-            if (abs(freq - curr_freq) < abs(freq - best_freq)) {
-                best_freq = curr_freq;
-                div.clkm_div = clkm_div;
-                div.bclk_div = bclk_div;
-            }
-        }
-    }
-
-    BITS_LOG("Requested frequency: %d, set frequency: %d\n", freq, best_freq);
-    BITS_LOG("clkm_div: %d, bclk_div: %d\n", div.clkm_div, div.bclk_div);
-
-    return div;
-}
 ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins) {
     if (pins->data_out_en) {
         iomux_set_function(gpio_2_iomux[3], IOMUX_GPIO3_FUNC_I2SO_DATA);
@@ -139,12 +150,12 @@ ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins)
 ICACHE_FLASH_ATTR void i2s_set_rate(i2s_port_t i2s_num, uint32_t rate, uint8_t bits_per_samp) {
     uint8_t bck_div = 1;
     uint8_t mclk_div = 1;
-    uint32_t scaled_base_freq = I2S_BASE_CLK / (bits_per_samp * 2);
+    uint32_t scaled_base_freq = 160000000UL / (bits_per_samp * 2);
     float delta_best = scaled_base_freq;
 
     for (uint8_t i = 1; i < 64; i++) {
         for (uint8_t j = i; j < 64; j++) {
-            float new_delta = abs(((float)scaled_base_freq / i / j) - rate);
+            float new_delta = fabs(((float)scaled_base_freq / i / j) - rate);
 
             if (new_delta < delta_best) {
                 delta_best = new_delta;

@@ -1,0 +1,760 @@
+/*
+  i2s.c - Software I2S library for esp8266
+
+  Code taken and reworked from espessif's I2S example
+
+  Copyright (c) 2015 Hristo Gochkov. All rights reserved.
+  This file is part of the esp8266 core for Arduino environment.
+
+  This library is os_free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the os_free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the os_free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+#include "esp8266_i2s.h"
+
+#include <math.h>
+#include "osapi.h"
+#include "ets_sys.h"
+#include "mem.h"
+
+#include "esp8266_i2s.h"
+#include "esp8266_slc.h"
+#include "esp8266_iomux.h"
+#include "i2s_dma.h"
+#include "esp8266_gpio.h"
+#include "esp8266_interrupt.h"
+
+typedef struct slc_queue_item {
+    uint32_t blocksize : 12;
+    uint32_t datalen : 12;
+    uint32_t unused : 5;
+    uint32_t sub_sof : 1;
+    uint32_t eof : 1;
+    volatile uint32_t owner : 1; // DMA can change this value
+    uint32_t *buf_ptr;
+    struct slc_queue_item *next_link_ptr;
+} slc_queue_item_t;
+
+typedef struct i2s_state
+{
+    uint32_t *slc_queue[DMA_QUEUE_SIZE];
+    volatile uint8_t slc_queue_len;
+    uint32_t *slc_buf_pntr[DMA_QUEUE_SIZE];     // Pointer to the I2S DMA buffer data
+    slc_queue_item_t slc_items[DMA_QUEUE_SIZE]; // I2S DMA buffer descriptors
+    uint32_t *curr_slc_buf;                     // Current buffer for writing
+    uint32_t curr_slc_buf_pos;                  // Position in the current buffer
+    void (*callback)(void);
+    // Callback function should be defined as 'void IRAM_ATTR function_name()',
+    // and be placed in IRAM for faster execution. Avoid long computational tasks in this
+    // function, use it to set flags and process later.
+    bool driveClocks;
+} i2s_state_t;
+
+// RX = I2S receive (i.e. microphone), TX = I2S transmit (i.e. DAC)
+static i2s_state_t *rx = NULL;
+static i2s_state_t *tx = NULL;
+
+// Last I2S sample rate requested
+static uint32_t _i2s_sample_rate;
+static int _i2s_bits = 16;
+
+// IOs used for I2S. Not defined in i2s.h, unfortunately.
+// Note these are internal GPIO numbers and not pins on an
+// Arduino board. Users need to verify their particular wiring.
+#define I2SO_DATA 3
+#define I2SO_BCK 15
+#define I2SO_WS 2
+#define I2SI_DATA 12
+#define I2SI_BCK 13
+#define I2SI_WS 14
+
+bool ICACHE_FLASH_ATTR i2s_set_bits(int bits)
+{
+    if (tx || rx || (bits != 16 && bits != 24))
+    {
+        return false;
+    }
+    _i2s_bits = bits;
+    return true;
+}
+
+static bool ICACHE_FLASH_ATTR _i2s_is_full(const i2s_state_t *ch)
+{
+    if (!ch)
+    {
+        return false;
+    }
+    return (ch->curr_slc_buf_pos == DMA_BUFFER_SIZE || ch->curr_slc_buf == NULL) && (ch->slc_queue_len == 0);
+}
+
+bool ICACHE_FLASH_ATTR i2s_is_full()
+{
+    return _i2s_is_full(tx);
+}
+
+bool ICACHE_FLASH_ATTR i2s_rx_is_full()
+{
+    return _i2s_is_full(rx);
+}
+
+static bool ICACHE_FLASH_ATTR _i2s_is_empty(const i2s_state_t *ch)
+{
+    if (!ch)
+    {
+        return false;
+    }
+    return (ch->slc_queue_len >= DMA_QUEUE_SIZE - 1);
+}
+
+bool ICACHE_FLASH_ATTR i2s_is_empty()
+{
+    return _i2s_is_empty(tx);
+}
+
+bool ICACHE_FLASH_ATTR i2s_rx_is_empty()
+{
+    return _i2s_is_empty(rx);
+}
+
+static uint16_t ICACHE_FLASH_ATTR _i2s_available(const i2s_state_t *ch)
+{
+    if (!ch)
+    {
+        return 0;
+    }
+    return (DMA_QUEUE_SIZE - ch->slc_queue_len) * DMA_BUFFER_SIZE;
+}
+
+uint16_t ICACHE_FLASH_ATTR i2s_available()
+{
+    return _i2s_available(tx);
+}
+
+uint16_t ICACHE_FLASH_ATTR i2s_rx_available()
+{
+    return _i2s_available(rx);
+}
+
+// Pop the top off of the queue and return it
+static uint32_t * i2s_slc_queue_next_item(i2s_state_t *ch)
+{
+    uint8_t i;
+    uint32_t *item = ch->slc_queue[0];
+    // os_printf("slc_queue_len before: %d\n", tx->slc_queue_len);
+    ch->slc_queue_len--;
+    // os_printf("slc_queue_len after: %d\n", tx->slc_queue_len);
+    for (i = 0; i < ch->slc_queue_len; i++)
+    {
+        ch->slc_queue[i] = ch->slc_queue[i + 1];
+    }
+    return item;
+}
+
+// Append an item to the end of the queue from receive
+static void i2s_slc_queue_append_item(i2s_state_t *ch, uint32_t *item)
+{
+    // Shift everything up, except for the one corresponding to this item
+    for (int i = 0, dest = 0; i < ch->slc_queue_len; i++)
+    {
+        if (ch->slc_queue[i] != item)
+        {
+            ch->slc_queue[dest++] = ch->slc_queue[i];
+        }
+    }
+    if (ch->slc_queue_len < DMA_QUEUE_SIZE - 1)
+    {
+        ch->slc_queue[ch->slc_queue_len++] = item;
+    }
+    else
+    {
+        ch->slc_queue[ch->slc_queue_len] = item;
+    }
+}
+
+static void i2s_slc_isr(void)
+{
+    ETS_SLC_INTR_DISABLE();
+    uint32_t slc_intr_status = SLC->int_st.val;
+    SLC->int_clr.val = 0xFFFFFFFF;
+    if (slc_intr_status & SLC_INT_RAW_RX_EOF)
+    {
+        slc_queue_item_t *finished_item = (slc_queue_item_t *)SLC->rx_eof_des_addr;
+        // Zero the buffer so it is mute in case of underflow
+        memset((void *)finished_item->buf_ptr, 0x00, DMA_BUFFER_SIZE * 4);
+        if (tx->slc_queue_len >= DMA_QUEUE_SIZE - 1)
+        {
+            // All buffers are empty. This means we have an underflow
+            i2s_slc_queue_next_item(tx); // os_free space for finished_item
+        }
+        // os_printf("interrupt slc_queue_len: %d\n", tx->slc_queue_len);
+        tx->slc_queue[tx->slc_queue_len++] = finished_item->buf_ptr;
+        if (tx->callback)
+        {
+            tx->callback();
+        }
+    }
+    if (slc_intr_status & SLC_INT_RAW_TX_EOF)
+    {
+        slc_queue_item_t *finished_item = (slc_queue_item_t *)SLC->tx_eof_des_addr;
+        // Set owner back to 1 (SW) or else RX stops.  TX has no such restriction.
+        finished_item->owner = 1;
+        i2s_slc_queue_append_item(rx, finished_item->buf_ptr);
+        if (rx->callback)
+        {
+            rx->callback();
+        }
+    }
+    ETS_SLC_INTR_ENABLE();
+}
+
+void ICACHE_FLASH_ATTR i2s_set_callback(void (*callback)(void))
+{
+    if (tx)
+        tx->callback = callback;
+}
+
+void ICACHE_FLASH_ATTR i2s_rx_set_callback(void (*callback)(void))
+{
+    if (rx)
+        rx->callback = callback;
+}
+
+static bool ICACHE_FLASH_ATTR _alloc_channel(i2s_state_t *ch)
+{
+    ch->slc_queue_len = 0;
+    for (int x = 0; x < DMA_QUEUE_SIZE; x++)
+    {
+        ch->slc_buf_pntr[x] = (uint32_t *)malloc(DMA_BUFFER_SIZE * sizeof(ch->slc_buf_pntr[0][0]));
+        memset(ch->slc_buf_pntr[x], 0, DMA_BUFFER_SIZE * sizeof(ch->slc_buf_pntr[0][0]));
+        if (!ch->slc_buf_pntr[x])
+        {
+            // OOM, the upper layer will os_free up any partially allocated channels.
+            return false;
+        }
+        memset(ch->slc_buf_pntr[x], 0, DMA_BUFFER_SIZE * sizeof(ch->slc_buf_pntr[x][0]));
+
+        ch->slc_items[x].unused = 0;
+        ch->slc_items[x].owner = 1;
+        ch->slc_items[x].eof = 1;
+        ch->slc_items[x].sub_sof = 0;
+        ch->slc_items[x].datalen = DMA_BUFFER_SIZE * 4;
+        ch->slc_items[x].blocksize = DMA_BUFFER_SIZE * 4;
+        ch->slc_items[x].buf_ptr = (uint32_t *)&ch->slc_buf_pntr[x][0];
+        ch->slc_items[x].next_link_ptr = (x < (DMA_QUEUE_SIZE - 1)) ? (&ch->slc_items[x + 1]) : (&ch->slc_items[0]);
+    }
+    return true;
+}
+
+static bool ICACHE_FLASH_ATTR i2s_slc_begin()
+{
+    if (tx)
+    {
+        if (!_alloc_channel(tx))
+        {
+            return false;
+        }
+    }
+    if (rx)
+    {
+        if (!_alloc_channel(rx))
+        {
+            return false;
+        }
+    }
+
+    ETS_SLC_INTR_DISABLE();
+    SLC->conf0.val |= SLC_CONF0_RX_LINK_RESET | SLC_CONF0_TX_LINK_RESET;
+    SLC->conf0.val &= ~(SLC_CONF0_RX_LINK_RESET | SLC_CONF0_TX_LINK_RESET);
+    SLC->int_clr.val = 0xFFFFFFFF;
+
+    /* Configure DMA */
+    SLC->conf0.val &= ~SLC_CONF0_MODE_MASK;
+    SLC->conf0.val |= (1 << SLC_CONF0_MODE_POS);
+    SLC->rx_dscr_conf.val |= SLC_RX_DESCRIPTOR_CONF_INFOR_NO_REPLACE | SLC_RX_DESCRIPTOR_CONF_TOKEN_NO_REPLACE;
+    SLC->rx_dscr_conf.val &= ~(SLC_RX_DESCRIPTOR_CONF_RX_FILL_ENABLE | SLC_RX_DESCRIPTOR_CONF_RX_EOF_MODE | SLC_RX_DESCRIPTOR_CONF_RX_FILL_MODE);
+
+    // Feed DMA the 1st buffer desc addr
+    // To send data to the I2S subsystem, counter-intuitively we use the RXLINK part, not the TXLINK as you might
+    // expect. The TXLINK part still needs a valid DMA descriptor, even if it's unused: the DMA engine will throw
+    // an error at us otherwise. Just feed it any random descriptor.
+    SLC->tx_link.val &= ~(SLC_TX_LINK_DESCRIPTOR_ADDR_MASK); // clear TX descriptor address
+    SLC->rx_link.val &= ~(SLC_RX_LINK_DESCRIPTOR_ADDR_MASK); // clear RX descriptor address
+    if (!rx)
+    {
+        SLC->tx_link.val |= (uint32)&tx->slc_items[1] << SLC_TX_LINK_DESCRIPTOR_ADDR_POS; // Set fake (unused) RX descriptor address
+    }
+    else
+    {
+        SLC->tx_link.val |= (uint32)&rx->slc_items[0] << SLC_TX_LINK_DESCRIPTOR_ADDR_POS; // Set real RX address
+    }
+    if (!tx)
+    {
+        SLC->rx_link.val |= (uint32)&rx->slc_items[1] << SLC_RX_LINK_DESCRIPTOR_ADDR_POS; // Set fake (unused) TX descriptor address
+    }
+    else
+    {
+        SLC->rx_link.val |= (uint32)&tx->slc_items[0] << SLC_RX_LINK_DESCRIPTOR_ADDR_POS; // Set real TX address
+    }
+
+    ETS_SLC_INTR_ATTACH(i2s_slc_isr, NULL);
+    SLC->int_ena.val = (tx ? SLC_INT_ENABLE_RX_EOF : 0) | (rx ? SLC_INT_ENABLE_TX_EOF : 0); // Enable appropriate EOF IRQ
+
+    ETS_SLC_INTR_ENABLE();
+
+    // Start transmission ("TX" DMA always needed to be enabled)
+    SLC->tx_link.val |= SLC_TX_LINK_START;
+    if (tx)
+    {
+        SLC->rx_link.val |= SLC_RX_LINK_START;
+    }
+
+    return true;
+}
+
+static void ICACHE_FLASH_ATTR i2s_slc_end()
+{
+    ETS_SLC_INTR_DISABLE();
+    SLC->int_clr.val = 0xFFFFFFFF;
+    SLC->int_ena.val = 0;
+    SLC->tx_link.val &= ~(SLC_TX_LINK_DESCRIPTOR_ADDR_MASK); // clear TX descriptor address
+    SLC->rx_link.val &= ~(SLC_RX_LINK_DESCRIPTOR_ADDR_MASK); // clear RX descriptor address
+
+    for (int x = 0; x < DMA_QUEUE_SIZE; x++)
+    {
+        if (tx)
+        {
+            os_free(tx->slc_buf_pntr[x]);
+            tx->slc_buf_pntr[x] = NULL;
+        }
+        if (rx)
+        {
+            os_free(rx->slc_buf_pntr[x]);
+            rx->slc_buf_pntr[x] = NULL;
+        }
+    }
+}
+
+// These routines push a single, 32-bit sample to the I2S buffers. Call at (on average)
+// at least the current sample rate.
+static bool ICACHE_FLASH_ATTR _i2s_write_sample(uint32_t sample, bool nb)
+{
+    if (!tx)
+    {
+        return false;
+    }
+
+    if (tx->curr_slc_buf_pos == DMA_BUFFER_SIZE || tx->curr_slc_buf == NULL)
+    {
+        if (tx->slc_queue_len == 0)
+        {
+            if (nb)
+            {
+                // Don't wait if nonblocking, just notify upper levels
+                return false;
+            }
+            while (1)
+            {
+                if (tx->slc_queue_len > 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // optimistic_yield(10000);
+                }
+            }
+        }
+        ETS_SLC_INTR_DISABLE();
+        tx->curr_slc_buf = (uint32_t *)i2s_slc_queue_next_item(tx);
+        ETS_SLC_INTR_ENABLE();
+        tx->curr_slc_buf_pos = 0;
+    }
+    tx->curr_slc_buf[tx->curr_slc_buf_pos++] = sample;
+    return true;
+}
+
+bool ICACHE_FLASH_ATTR i2s_write_sample(uint32_t sample)
+{
+    return _i2s_write_sample(sample, false);
+}
+
+bool ICACHE_FLASH_ATTR i2s_write_sample_nb(uint32_t sample)
+{
+    return _i2s_write_sample(sample, true);
+}
+
+bool ICACHE_FLASH_ATTR i2s_write_lr(int16_t left, int16_t right)
+{
+    int sample = right & 0xFFFF;
+    sample = sample << 16;
+    sample |= left & 0xFFFF;
+    return i2s_write_sample(sample);
+}
+
+// writes a buffer of frames into the DMA memory, returns the amount of frames written
+// A frame is just a int16_t for mono, for stereo a frame is two int16_t, one for each channel.
+static inline uint16_t _i2s_write_buffer(const int16_t *frames, uint16_t frame_count, bool mono, bool nb)
+{
+    uint16_t frames_written = 0;
+    while (frame_count > 0) {
+        // make sure we have room in the current buffer
+        if (tx->curr_slc_buf_pos == DMA_BUFFER_SIZE || tx->curr_slc_buf == NULL)
+        {
+            // os_printf("1 - slc_queue_len: %d\n", tx->slc_queue_len);
+            // no room in the current buffer? if there are no buffers available then exit
+            if (tx->slc_queue_len == 0)
+            {
+                // os_printf("1.1 - slc_queue_len: %d\n", tx->slc_queue_len);
+                // if (nb == true)
+                // {
+                    // if nonblocking just return the number of frames written so far
+                    // break;
+                // }
+                // else
+                // {
+                    while (1)
+                    {
+                        if (tx->slc_queue_len > 0)
+                        {
+                            break;
+                        }
+                        // else
+                        // {
+                            // break;
+                            // optimistic_yield(10000);
+                        // }
+                    }
+                // }
+            }
+            // os_printf("2 - slc_queue_len: %d\n", tx->slc_queue_len);
+            // get a new buffer
+            ETS_SLC_INTR_DISABLE();
+            tx->curr_slc_buf = (uint32_t *)i2s_slc_queue_next_item(tx);
+            ETS_SLC_INTR_ENABLE();
+            tx->curr_slc_buf_pos = 0;
+            // os_printf("3 - slc_queue_len: %d\n", tx->slc_queue_len);
+        }
+        // os_printf("4 - slc_queue_len: %d\n", tx->slc_queue_len);
+
+        // space available in the current buffer
+        uint16_t available = DMA_BUFFER_SIZE - tx->curr_slc_buf_pos;
+
+        uint16_t fc = (available < frame_count) ? available : frame_count;
+
+        if (mono == true)
+        {
+            for (uint16_t i = 0; i < fc; i++)
+            {
+                uint16_t v = (uint16_t)(*frames++);
+                tx->curr_slc_buf[tx->curr_slc_buf_pos++] = (v << 16) | v;
+            }
+        }
+        else
+        {
+            for (uint16_t i = 0; i < fc; i++)
+            {
+                uint16_t v1 = (uint16_t)(*frames++);
+                uint16_t v2 = (uint16_t)(*frames++);
+                tx->curr_slc_buf[tx->curr_slc_buf_pos++] = (v1 << 16) | v2;
+            }
+        }
+        // os_printf("5 - slc_queue_len: %d\n", tx->slc_queue_len);
+
+        frame_count -= fc;
+        frames_written += fc;
+    }
+    // os_printf("6 - slc_queue_len: %d\n", tx->slc_queue_len);
+    return frames_written;
+}
+
+uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, true); }
+
+uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, false); }
+
+uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, true); }
+
+uint16_t i2s_write_buffer(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, false); }
+
+bool ICACHE_FLASH_ATTR i2s_read_sample(int16_t *left, int16_t *right, bool blocking)
+{
+    if (!rx)
+    {
+        return false;
+    }
+    if (rx->curr_slc_buf_pos == DMA_BUFFER_SIZE || rx->curr_slc_buf == NULL)
+    {
+        if (rx->slc_queue_len == 0)
+        {
+            if (!blocking)
+            {
+                return false;
+            }
+            while (1)
+            {
+                if (rx->slc_queue_len > 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // optimistic_yield(10000);
+                }
+            }
+        }
+        ETS_SLC_INTR_DISABLE();
+        rx->curr_slc_buf = (uint32_t *)i2s_slc_queue_next_item(rx);
+        ETS_SLC_INTR_ENABLE();
+        rx->curr_slc_buf_pos = 0;
+    }
+
+    uint32_t sample = rx->curr_slc_buf[rx->curr_slc_buf_pos++];
+    if (left)
+    {
+        *left = sample & 0xffff;
+    }
+    if (right)
+    {
+        *right = sample >> 16;
+    }
+
+    return true;
+}
+
+void ICACHE_FLASH_ATTR i2s_set_rate(uint32_t rate)
+{ // Rate in HZ
+    if (rate == _i2s_sample_rate)
+    {
+        return;
+    }
+    _i2s_sample_rate = rate;
+
+    uint32_t scaled_base_freq = 160000000UL / (_i2s_bits * 2);
+    float delta_best = scaled_base_freq;
+
+    uint8_t sbd_div_best = 1;
+    uint8_t scd_div_best = 1;
+    for (uint8_t i = 1; i < 64; i++)
+    {
+        for (uint8_t j = i; j < 64; j++)
+        {
+            float new_delta = fabs(((float)scaled_base_freq / i / j) - rate);
+            if (new_delta < delta_best)
+            {
+                delta_best = new_delta;
+                sbd_div_best = i;
+                scd_div_best = j;
+            }
+        }
+    }
+
+    // BITS_LOG("set divider.. \r\n")
+    i2s_set_dividers(sbd_div_best, scd_div_best);
+}
+
+void ICACHE_FLASH_ATTR i2s_set_dividers(uint8_t div1, uint8_t div2)
+{
+    // BITS_LOG("setring divider.. \r\n")
+    // Ensure dividers fit in bit fields
+    div1 &= 0x3F;
+    div2 &= 0x3F;
+
+    /*
+    Following this post: https://github.com/esp8266/Arduino/issues/2590
+    We should reset the transmitter while changing the configuration bits to avoid random distortion.
+    */
+
+    uint32_t i2sc_temp = I2S[0]->conf.val;
+    i2sc_temp |= I2S_CONF_TX_RESET; // Hold transmitter in reset
+    I2S[0]->conf.val = i2sc_temp;
+
+    // trans master(active low), recv master(active_low), !bits mod(==16 bits/channel), clear clock dividers
+    i2sc_temp &= ~(I2S_CONF_TX_SLAVE_MOD | I2S_CONF_RX_SLAVE_MOD | (I2S_CONF_BITS_MOD_MASK) | (I2S_CONF_BCK_DIV_MASK) | (I2S_CONF_CLKM_DIV_MASK));
+
+    // I2SRF = Send/recv right channel first (? may be swapped form I2S spec of WS=0 => left)
+    // I2SMR = MSB recv/xmit first
+    // I2SRMS, I2STMS = 1-bit delay from WS to MSB (I2S format)
+    // div1, div2 = Set I2S WS clock frequency.  BCLK seems to be generated from 32x this
+    i2sc_temp |= I2S_CONF_RIGHT_FIRST | I2S_CONF_MSB_RIGHT | I2S_CONF_RX_MSB_SHIFT | I2S_CONF_TX_MSB_SHIFT | (div1 << I2S_CONF_BCK_DIV_POS) | (div2 << I2S_CONF_CLKM_DIV_POS);
+
+    // Adjust the shift count for 16/24b output
+    i2sc_temp |= (_i2s_bits == 24 ? 8 : 0) << I2S_CONF_BITS_MOD_POS;
+
+    I2S[0]->conf.val = i2sc_temp;
+
+    i2sc_temp &= ~(I2S_CONF_TX_RESET); // Release reset
+    I2S[0]->conf.val = i2sc_temp;
+    BITS_LOG("end set divider.. \r\n")
+}
+
+float ICACHE_FLASH_ATTR i2s_get_real_rate()
+{
+    return (float)(160000000.0) / (_i2s_bits * 2) / ((I2S[0]->conf.val >> I2S_CONF_BCK_DIV_POS) & 0x3F) / ((I2S[0]->conf.val >> I2S_CONF_CLKM_DIV_POS) & 0x3F);
+}
+
+bool ICACHE_FLASH_ATTR i2s_rxtx_begin(bool enableRx, bool enableTx)
+{
+    return i2s_rxtxdrive_begin(enableRx, enableTx, true, true);
+}
+
+bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool driveRxClocks, bool driveTxClocks)
+{
+    BITS_LOGD("1 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    if (tx || rx)
+    {
+        BITS_LOG("Stop I2S r\n");
+        i2s_end(); // Stop and os_free any ongoing stuff
+    }
+    BITS_LOGD("2 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+    if (enableTx)
+    {
+        tx = (i2s_state_t *)malloc(1 * sizeof(*tx));
+        memset(tx, 0, sizeof(*tx));
+        if (!tx)
+        {
+            BITS_LOGE("Error allocate Tx\r\n");
+            return false; // OOM Error!
+        }
+        tx->driveClocks = driveTxClocks;
+        iomux_set_function(gpio_2_iomux[3], IOMUX_GPIO3_FUNC_I2SO_DATA);
+        if (driveTxClocks)
+        {
+            iomux_set_function(gpio_2_iomux[2], IOMUX_GPIO2_FUNC_I2SO_WS);
+            iomux_set_function(gpio_2_iomux[15], IOMUX_GPIO15_FUNC_I2SO_BCK);
+        }
+    }
+    BITS_LOGD("3 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    if (enableRx)
+    {
+        rx = (i2s_state_t *)malloc(1 * sizeof(*rx));
+        memset(rx, 0, sizeof(*rx));
+        if (!rx)
+        {
+            BITS_LOGE("Error allocate Tx\r\n");
+            i2s_end();    // Clean up any TX or pin changes
+            return false; // OOM error!
+        }
+        rx->driveClocks = driveRxClocks;
+        if (driveRxClocks)
+        {
+            iomux_set_function(gpio_2_iomux[13], IOMUX_GPIO13_FUNC_I2SI_BCK);
+            iomux_set_function(gpio_2_iomux[14], IOMUX_GPIO14_FUNC_I2SI_WS);
+        }
+        iomux_set_function(gpio_2_iomux[12], IOMUX_GPIO12_FUNC_I2SI_DATA);
+    }
+    BITS_LOGD("4 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    if (!i2s_slc_begin())
+    {
+        BITS_LOGE("Error allocate SLC\r\n");
+        i2s_end();
+        return false;
+    }
+    BITS_LOGD("5 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    i2c_writeReg_Mask_def(i2c_bbpll, i2c_bbpll_en_audio_clock_out, 1);
+
+    I2S[0]->int_clr.val = 0x3F;
+    I2S[0]->int_ena.val = 0;
+    BITS_LOGD("6 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    // Reset I2S
+    I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
+    I2S[0]->conf.val |= I2S_CONF_RESET_MASK;
+    I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
+    BITS_LOGD("7 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    // I2STXFMM, I2SRXFMM=0 => 16-bit, dual channel data shifted in/out
+    I2S[0]->fifo_conf.val &= ~(I2S_FIFO_CONF_DESCRIPTOR_ENABLE | I2S_FIFO_CONF_TX_FIFO_MOD_MASK | I2S_FIFO_CONF_RX_FIFO_MOD_MASK); // Set RX/TX FIFO_MOD=0 and disable DMA (FIFO only)
+    if (_i2s_bits == 24)
+    {
+        I2S[0]->fifo_conf.val |= (2 << I2S_FIFO_CONF_TX_FIFO_MOD_POS) | (2 << I2S_FIFO_CONF_RX_FIFO_MOD_POS);
+    }
+    I2S[0]->fifo_conf.val |= I2S_FIFO_CONF_DESCRIPTOR_ENABLE; // Enable DMA
+
+    // I2STXCMM, I2SRXCMM=0 => Dual channel mode
+    I2S[0]->conf_chan.val &= ~(I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK | I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK); // Set RX/TX CHAN_MOD=0
+
+    BITS_LOGD("8 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+    // Ensure a sane clock is set, but don't change any pre-existing ones.
+    // But we also need to make sure the other bits weren't reset by a previous
+    // reset.  So, store the present one, clear the flag, then set the same
+    // value (writing all needed config bits in the process
+    uint32_t save_rate = _i2s_sample_rate;
+    _i2s_sample_rate = 0;
+    i2s_set_rate(save_rate ? save_rate : 44100);
+    BITS_LOGD("9 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+
+    if (rx)
+    {
+        // Need to prime the # of samples to receive in the engine
+        I2S[0]->rx_eof_num = DMA_BUFFER_SIZE;
+    }
+
+    I2S[0]->conf.val |= (rx ? I2S_CONF_RX_START : 0) | (tx ? I2S_CONF_TX_START : 0); // Start transmission/reception
+    BITS_LOGD("10 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+    return true;
+}
+
+
+void ICACHE_FLASH_ATTR i2s_begin()
+{
+    i2s_rxtx_begin(false, true);
+}
+
+void ICACHE_FLASH_ATTR i2s_end()
+{
+    // Disable any I2S send or receive
+    // Maybe not needed since we're resetting on the next line...
+    I2S[0]->conf.val &= ~(I2S_CONF_TX_START | I2S_CONF_RX_START);
+
+    // Reset I2S
+    I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
+    I2S[0]->conf.val |= I2S_CONF_RESET_MASK;
+    I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
+
+    i2s_slc_end();
+
+    if (tx)
+    {
+        // esp_gpio_config(1 << I2SO_DATA, GPIO_MODE_IN);
+        // if (tx->driveClocks)
+        // {
+        //     esp_gpio_config(I2SO_BCK, GPIO_MODE_IN);
+        //     esp_gpio_config(I2SO_WS, GPIO_MODE_IN);
+        // }
+        os_free(tx);
+        tx = NULL;
+    }
+    if (rx)
+    {
+        // esp_gpio_config(I2SI_DATA, GPIO_MODE_IN);
+        // if (rx->driveClocks)
+        // {
+        //     esp_gpio_config(I2SI_BCK, GPIO_MODE_IN);
+        //     esp_gpio_config(I2SI_WS, GPIO_MODE_IN);
+        // }
+        os_free(rx);
+        rx = NULL;
+    }
+}
+
+
+void ICACHE_FLASH_ATTR i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_cfg, i2s_pin_config_t *pins){
+    i2s_rxtxdrive_begin(0, 1, 0, 0);
+    i2s_set_rate(i2s_cfg->sample_rate);
+}
+void ICACHE_FLASH_ATTR i2s_dma_start(i2s_port_t i2s_num){
+
+}

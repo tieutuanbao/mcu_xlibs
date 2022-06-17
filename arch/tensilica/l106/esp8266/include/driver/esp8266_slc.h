@@ -15,58 +15,58 @@
 #include "esp8266_regs.h"
 #include "common_macros.h"
 
-#define SLC         ((slc_t *)SLC_BASE)
+#define SLC         ((volatile slc_t *)SLC_BASE)
 
 typedef struct struct_slc {
-    union {
+    union {    // offset: 0x00
         struct {
-            uint32_t tx_rst:            1;
-            uint32_t rx_rst:            1;
-            uint32_t ahbm_fifo_rst:     1;
-            uint32_t ahbm_rst:          1;
-            uint32_t tx_loop_test:      1;
-            uint32_t rx_loop_test:      1;
-            uint32_t rx_auto_wrback:    1;
-            uint32_t rx_no_restart_clr: 1;
-            uint32_t rxdscr_burst_en:   1;
-            uint32_t rxdata_burst_en:   1;
-            uint32_t rxlink_auto_ret:   1;
-            uint32_t txlink_auto_ret:   1;
-            uint32_t txdscr_burst_en:   1;
-            uint32_t txdata_burst_en:   1;
-            uint32_t reserved14:       18;
+            uint32_t tx_rst:            1;    // bit 0
+            uint32_t rx_rst:            1;    // bit 1
+            uint32_t ahbm_fifo_rst:     1;    // bit 2
+            uint32_t ahbm_rst:          1;    // bit 3
+            uint32_t tx_loop_test:      1;    // bit 4
+            uint32_t rx_loop_test:      1;    // bit 5
+            uint32_t rx_auto_wrback:    1;    // bit 6
+            uint32_t rx_no_restart_clr: 1;    // bit 7
+            uint32_t rxdscr_burst_en:   1;    // bit 8
+            uint32_t rxdata_burst_en:   1;    // bit 9
+            uint32_t rxlink_auto_ret:   1;    // bit 10
+            uint32_t txlink_auto_ret:   1;    // bit 11
+            uint32_t txdscr_burst_en:   1;    // bit 12
+            uint32_t txdata_burst_en:   1;    // bit 13
+            uint32_t reserved14:       18;    // bit 14 : 31
         };
         uint32_t val;
     } conf0;
-    union {
+    union {    // offset: 0x04
         struct {
-            uint32_t frhost_bit0:             1;
-            uint32_t frhost_bit1:             1;
-            uint32_t frhost_bit2:             1;
-            uint32_t frhost_bit3:             1;
-            uint32_t frhost_bit4:             1;
-            uint32_t frhost_bit5:             1;
-            uint32_t frhost_bit6:             1;
-            uint32_t frhost_bit7:             1;
-            uint32_t rx_start:                1;
-            uint32_t tx_start:                1;
-            uint32_t rx_udf:                  1;
-            uint32_t tx_ovf:                  1;
-            uint32_t token0_1to0:             1;
-            uint32_t token1_1to0:             1;
-            uint32_t tx_done:                 1;
-            uint32_t tx_suc_eof:              1;
-            uint32_t rx_done:                 1;
-            uint32_t rx_eof:                  1;
-            uint32_t tohost:                  1;
-            uint32_t tx_dscr_err:             1;
-            uint32_t rx_dscr_err:             1;
-            uint32_t tx_dscr_empty:           1;
-            uint32_t reserved22:             10;
+            uint32_t frhost_bit0:             1;    // bit 0
+            uint32_t frhost_bit1:             1;    // bit 1
+            uint32_t frhost_bit2:             1;    // bit 2
+            uint32_t frhost_bit3:             1;    // bit 3
+            uint32_t frhost_bit4:             1;    // bit 4
+            uint32_t frhost_bit5:             1;    // bit 5
+            uint32_t frhost_bit6:             1;    // bit 6
+            uint32_t frhost_bit7:             1;    // bit 7
+            uint32_t rx_start:                1;    // bit 8
+            uint32_t tx_start:                1;    // bit 9
+            uint32_t rx_udf:                  1;    // bit 10
+            uint32_t tx_ovf:                  1;    // bit 11
+            uint32_t token0_1to0:             1;    // bit 12
+            uint32_t token1_1to0:             1;    // bit 13
+            uint32_t tx_done:                 1;    // bit 14
+            uint32_t tx_suc_eof:              1;    // bit 15
+            uint32_t rx_done:                 1;    // bit 16
+            uint32_t rx_eof:                  1;    // bit 17
+            uint32_t tohost:                  1;    // bit 18
+            uint32_t tx_dscr_err:             1;    // bit 19
+            uint32_t rx_dscr_err:             1;    // bit 20
+            uint32_t tx_dscr_empty:           1;    // bit 21
+            uint32_t reserved22:             10;    // bit 22 : 31
         };
         uint32_t val;
     } int_raw;
-    union {
+    union {    // offset: 0x08
         struct {
             uint32_t frhost_bit0:            1;
             uint32_t frhost_bit1:            1;
@@ -94,7 +94,7 @@ typedef struct struct_slc {
         };
         uint32_t val;
     } int_st;
-    union {
+    union {    // offset: 0x0C
         struct {
             uint32_t frhost_bit0:             1;
             uint32_t frhost_bit1:             1;
@@ -122,7 +122,7 @@ typedef struct struct_slc {
         };
         uint32_t val;
     } int_ena;
-    union {
+    union {    // offset: 0x10
         struct {
             uint32_t frhost_bit0:             1;
             uint32_t frhost_bit1:             1;
@@ -157,7 +157,7 @@ typedef struct struct_slc {
             uint32_t reserved2:  30;
         };
         uint32_t val;
-    } rx_status;
+    } rx_status;    // 0x14
     union {
         struct {
             uint32_t rxfifo_wdata:   9;
@@ -166,7 +166,7 @@ typedef struct struct_slc {
             uint32_t reserved17:    15;
         };
         uint32_t val;
-    } rxfifo_push;
+    } rxfifo_push;    // 0x18
     union {
         struct {
             uint32_t tx_full:    1;
@@ -174,7 +174,7 @@ typedef struct struct_slc {
             uint32_t reserved2:  30;
         };
         uint32_t val;
-    } tx_status;
+    } tx_status;    // 0x1C
     union {
         struct {
             uint32_t txfifo_rdata:  11;
@@ -183,8 +183,8 @@ typedef struct struct_slc {
             uint32_t reserved17:    15;
         };
         uint32_t val;
-    } txfifo_pop;
-    union {
+    } txfifo_pop;    // 0x20
+    union {    // offset: 0x24
         struct {
             uint32_t addr:            20;
             uint32_t reserved20:       8;
@@ -195,14 +195,14 @@ typedef struct struct_slc {
         };
         uint32_t val;
     } rx_link;
-    union {
+    union {    // offset: 0x28
         struct {
-            uint32_t addr:            20;
-            uint32_t reserved20:       8;
-            uint32_t stop:             1;
-            uint32_t start:            1;
-            uint32_t restart:          1;
-            uint32_t park:             1;
+            uint32_t addr:            20;   // bit 0 : 19
+            uint32_t reserved20:       8;   // bit 20 : 27
+            uint32_t stop:             1;   // bit 28
+            uint32_t start:            1;   // bit 29
+            uint32_t restart:          1;   // bit 30
+            uint32_t park:             1;   // bit 21
         };
         uint32_t val;
     } tx_link;
@@ -212,7 +212,7 @@ typedef struct struct_slc {
             uint32_t reserved8:  24;
         };
         uint32_t val;
-    } intvec_tohost;
+    } intvec_tohost;    // 0x2C
     union {
         struct {
             uint32_t wdata:            12;
@@ -224,7 +224,7 @@ typedef struct struct_slc {
             uint32_t reserved28:        4;
         };
         uint32_t val;
-    } token0;
+    } token0;    // 0x30
     union {
         struct {
             uint32_t wdata:            12;
@@ -236,10 +236,10 @@ typedef struct struct_slc {
             uint32_t reserved28:        4;
         };
         uint32_t val;
-    } token1;
-    uint32_t conf1;
-    uint32_t state0;
-    uint32_t state1;
+    } token1;    // 0x34
+    uint32_t conf1;    // 0x38
+    uint32_t state0;    // 0x3C
+    uint32_t state1;    // 0x40
     union {
         struct {
             uint32_t txeof_ena:           6;
@@ -250,11 +250,11 @@ typedef struct struct_slc {
             uint32_t tx_push_idle_num:   16;
         };
         uint32_t val;
-    } bridge_conf;
-    uint32_t rx_eof_des_addr;
-    uint32_t tx_eof_des_addr;
-    uint32_t to_eof_bfr_des_addr;
-    union {
+    } bridge_conf;    // 0x44
+    uint32_t rx_eof_des_addr;    // 0x48
+    uint32_t tx_eof_des_addr;    // 0x4C
+    uint32_t to_eof_bfr_des_addr;    // 0x50
+    union {    // offset: 0x54
         struct {
             uint32_t mode:         3;
             uint32_t reserved3:    1;
@@ -263,7 +263,7 @@ typedef struct struct_slc {
         };
         uint32_t val;
     } ahb_test;
-    union {
+    union {    // offset: 0x58
         struct {
             uint32_t cmd_st:          3;
             uint32_t reserved3:       1;
@@ -275,26 +275,26 @@ typedef struct struct_slc {
         };
         uint32_t val;
     } sdio_st;
-    union {
+    union {    // offset: 0x5C
         struct {
-            uint32_t pop_idle_cnt:     16;
-            uint32_t token_no_replace:  1;
-            uint32_t infor_no_replace:  1;
-            uint32_t rx_fill_mode:      1;
-            uint32_t rx_eof_mode:       1;
-            uint32_t rx_fill_en:        1;
-            uint32_t reserved21:       11;
+            uint32_t pop_idle_cnt:     16;  // bit 0 : 15
+            uint32_t token_no_replace:  1;  // bit 16
+            uint32_t infor_no_replace:  1;  // bit 17
+            uint32_t rx_fill_mode:      1;  // bit 18
+            uint32_t rx_eof_mode:       1;  // bit 19
+            uint32_t rx_fill_en:        1;  // bit 20
+            uint32_t reserved21:       11;  // bit 21 : 31
         };
         uint32_t val;
     } rx_dscr_conf;
-    uint32_t txlink_dscr;
-    uint32_t txlink_dscr_bf0;
-    uint32_t txlink_dscr_bf1;
-    uint32_t rxlink_dscr;
-    uint32_t rxlink_dscr_bf0;
-    uint32_t rxlink_dscr_bf1;
-    uint32_t date;
-    uint32_t id;
+    uint32_t txlink_dscr;    // 0x60
+    uint32_t txlink_dscr_bf0;    // 0x64
+    uint32_t txlink_dscr_bf1;    // 0x68
+    uint32_t rxlink_dscr;    // 0x6C
+    uint32_t rxlink_dscr_bf0;    // 0x70
+    uint32_t rxlink_dscr_bf1;    // 0x74
+    uint32_t date;    // 0x78
+    uint32_t id;    // 0x7C
     uint32_t reserved_80[2];
     union {
         struct {
@@ -303,14 +303,14 @@ typedef struct struct_slc {
             uint32_t reserved24:      8;
         };
         uint32_t val;
-    } host_intr_raw;
+    } host_intr_raw;    // 0x88
     uint32_t reserved_8C[2];
-    uint32_t host_conf_w0;
-    uint32_t host_conf_w1;
-    uint32_t host_intr_status;
-    uint32_t host_conf_w2;
-    uint32_t host_conf_w3;
-    uint32_t host_conf_w4;
+    uint32_t host_conf_w0;    // 0x94
+    uint32_t host_conf_w1;    // 0x98
+    uint32_t host_intr_status;    // 0x9C
+    uint32_t host_conf_w2;    // 0xA0
+    uint32_t host_conf_w3;    // 0xA4
+    uint32_t host_conf_w4;    // 0xA8
     uint32_t reserved_AC[1];
     union {
         struct {
@@ -319,7 +319,7 @@ typedef struct struct_slc {
             uint32_t reserved13:      19;
         };
         uint32_t val;
-    } host_intr_clr;
+    } host_intr_clr;    // 0xB0
     union {
         struct {
             uint32_t tohost_bit0:     1;
@@ -328,9 +328,9 @@ typedef struct struct_slc {
             uint32_t reserved24:      8;
         };
         uint32_t val;
-    } host_intr_ena;
+    } host_intr_ena;    // 0xB4
     uint32_t reserved_BC[1];
-    uint32_t host_conf_w5;
+    uint32_t host_conf_w5;    // 0xBC
 } slc_t;
 
 /* Details for CONF0 register */

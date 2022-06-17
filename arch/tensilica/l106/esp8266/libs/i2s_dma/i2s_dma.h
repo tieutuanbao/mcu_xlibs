@@ -22,7 +22,7 @@
 
 ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins);
 ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num);
-ICACHE_FLASH_ATTR void i2s_dma_write(uint32_t *p_data, uint16_t data_len);
+ICACHE_FLASH_ATTR void i2s_dma_write(int16_t *frames, uint16_t frames_len);
 
 
 #endif /* __I2S_DMA_H */

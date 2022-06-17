@@ -36,16 +36,16 @@ queue_t dma_queue;
  * @return void 
  */
 ICACHE_FLASH_ATTR void init_descriptors_list() {
-    memset(dma_buffer, 0, DMA_QUEUE_SIZE * DMA_BUFFER_SIZE);
+    memset(dma_buffer, 0, DMA_QUEUE_SIZE * DMA_BUFFER_SIZE * 4);
 
     for (int i = 0; i < DMA_QUEUE_SIZE; i++) {
         dma_block_list[i].owner = 1;
         dma_block_list[i].eof = 1;
         dma_block_list[i].sub_sof = 0;
         dma_block_list[i].unused = 0;
-        dma_block_list[i].buf_ptr = dma_buffer[i];
-        dma_block_list[i].datalen = DMA_BUFFER_SIZE;
-        dma_block_list[i].blocksize = DMA_BUFFER_SIZE;
+        dma_block_list[i].buf_ptr = (uint32_t *)(&dma_buffer[i][0]);
+        dma_block_list[i].datalen = DMA_BUFFER_SIZE * 4;
+        dma_block_list[i].blocksize = DMA_BUFFER_SIZE * 4;
         if (i == (DMA_QUEUE_SIZE - 1)) {
             dma_block_list[i].next = &dma_block_list[0];
         } else {
@@ -79,6 +79,7 @@ void dma_isr_handler(void *args) {
     disable_interrupts(INT_NUM_SLC);
     if (i2s_dma_is_eof_interrupt()) {
         dma_descriptor_t *descr = i2s_dma_get_eof_descriptor();
+        memset((void *)descr->buf_ptr, 0x00, DMA_BUFFER_SIZE * 4);
         if (dma_queue.queue_len >= (DMA_QUEUE_SIZE - 1)) {
             /* Lấy 1 phần tử đầu Queue */
             dma_queue.queue_len--;
@@ -115,33 +116,37 @@ ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
     init_descriptors_list();
     slc_start(dma_block_list);
     i2s_start(i2s_num);
+    BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 }
 
 /**
  * @brief Hàm truyền I2S qua DMA
  * 
- * @param file 
+ * @param frames frame i2s, mỗi frame mono là (1 x int16_t), stereo là (2 x int16_t)
+ * @param frames_len độ dài frame
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_dma_write(uint32_t *p_data, uint16_t data_len) {
+ICACHE_FLASH_ATTR void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
     uint32_t timeout_queue = 1000;
     while(timeout_queue--) {
-        if(dma_queue.queue_len != 0) {
+        if(dma_queue.queue_len > 0) {
             /* Disable DMA interrupt */
             disable_interrupts(INT_NUM_SLC);
             /* Lấy ra phần tử đầu */
             uint32_t *item = dma_queue.queue[0];
+            /* Enable DMA interrupt */
+            enable_interrupts(INT_NUM_SLC);
             dma_queue.queue_len--;
             /* Dồn Queue lên đầu */
             for(uint16_t idx_queue = 0; idx_queue < dma_queue.queue_len; idx_queue++) {
                 dma_queue.queue[idx_queue] = dma_queue.queue[idx_queue + 1];
             }
             /* Đưa dữ liệu vào buffer */
-            for(uint16_t idx_data = 0; idx_data < data_len; idx_data++) {
-                if(item) item[idx_data] = p_data[idx_data];
+            for(uint16_t idx_data = 0; idx_data < frames_len; idx_data++) {
+                uint16_t v1 = (uint16_t)(*frames++);
+                uint16_t v2 = (uint16_t)(*frames++);
+                item[idx_data] = (v1 << 16) | v2;
             }
-            /* Enable DMA interrupt */
-            enable_interrupts(INT_NUM_SLC);
             break;
         }
     }

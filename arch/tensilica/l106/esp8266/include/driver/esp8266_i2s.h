@@ -15,8 +15,9 @@
 #include "esp8266_regs.h"
 #include "common_macros.h"
 #include "c_types.h"
+#include "esp8266_sdk_function.h"
 
-#define I2S0    ((i2s_t *)I2S_BASE)
+#define I2S0    ((volatile i2s_t *)I2S_BASE)
 
 /**
  * @brief Cấu trúc thanh ghi I2S ESP8266
@@ -25,7 +26,7 @@
 typedef struct struct_i2s {
     volatile uint32_t txfifo;           // 0x00
     volatile uint32_t rxfifo;           // 0x04
-    union {
+    union {    // offset: 0x08
         volatile struct {
             uint32_t tx_reset:       1;     // bit 0
             uint32_t rx_reset:       1;     // bit 1
@@ -45,8 +46,8 @@ typedef struct struct_i2s {
             uint32_t reserved28:     4;     // bit 28 : 31
         };
         volatile uint32_t val;
-    } conf;    // 0x08
-    union {
+    } conf;
+    union {    // offset: 0x0C
         volatile struct {
             uint32_t rx_take_data:  1;
             uint32_t tx_put_data:   1;
@@ -57,8 +58,8 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_raw;    // 0x0C
-    union {
+    } int_raw;
+    union {    // offset: 0x10
         struct {
             uint32_t rx_take_data:  1;
             uint32_t tx_put_data:   1;
@@ -69,8 +70,8 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         uint32_t val;
-    } int_st;    // 0x10
-    union {
+    } int_st;
+    union {    // offset: 0x14
         volatile struct {
             uint32_t rx_take_data:  1;
             uint32_t tx_put_data:   1;
@@ -81,8 +82,8 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_ena;    // 0x14
-    union {
+    } int_ena;
+    union {    // offset: 0x18
         volatile struct {
             uint32_t rx_take_data:  1;
             uint32_t tx_put_data:   1;
@@ -93,8 +94,8 @@ typedef struct struct_i2s {
             uint32_t reserved6:    26;
         };
         volatile uint32_t val;
-    } int_clr;    // 0x18
-    union {
+    } int_clr;
+    union {    // offset: 0x1C
         volatile struct {
             uint32_t tx_bck_in_delay:   2;
             uint32_t tx_ws_in_delay:    2;
@@ -112,8 +113,8 @@ typedef struct struct_i2s {
             uint32_t reserved23:        9;
         };
         volatile uint32_t val;
-    } timing;    // 0x1C
-    union {
+    } timing;
+    union {    // offset: 0x20
         volatile struct {
             uint32_t rx_data_num:          6;   // bit 0 : 5
             uint32_t tx_data_num:          6;   // bit 6 : 11
@@ -123,17 +124,17 @@ typedef struct struct_i2s {
             uint32_t reserved19:          13;   // bit 19 : 31
         };
         volatile uint32_t val;
-    } fifo_conf;    // 0x20
-    volatile uint32_t rx_eof_num;    // 0x24
-    volatile uint32_t conf_single_data;    // 0x28
-    union {
+    } fifo_conf;
+    volatile uint32_t rx_eof_num;    // offset: 0x24
+    volatile uint32_t conf_single_data;    // offset: 0x28
+    union {    // offset: 0x2C
         volatile struct {
             uint32_t tx_chan_mod: 3;   // bit 0 : 2
             uint32_t rx_chan_mod: 2;   // bit 3 : 4
             uint32_t reserved5:  27;   // bit 5 : 31
         };
         volatile uint32_t val;
-    } conf_chan;    // 0x2C
+    } conf_chan;
 } i2s_t;
 
 #ifndef i2c_bbpll
@@ -241,6 +242,14 @@ typedef struct struct_i2s {
 #define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS    0
 #define I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK   (0x00000007 << I2S_CONF_CHANNELS_TX_CHANNEL_MOD_POS)
 
+
+#define i2c_writeReg_Mask(block, host_id, reg_add, Msb, Lsb, indata) \
+        rom_i2c_writeReg_Mask(block, host_id, reg_add, Msb, Lsb, indata)
+
+#define i2c_writeReg_Mask_def(block, reg_add, indata) \
+        i2c_writeReg_Mask(block, block##_hostid,  reg_add,  reg_add##_msb, reg_add##_lsb,  indata)
+
+
 /**
  * @brief I2S Peripheral, 0
  */
@@ -321,7 +330,7 @@ typedef struct {
     bool                    tx_desc_auto_clear;     /*!< I2S auto clear tx descriptor if there is underflow condition (helps in avoiding noise in case of data unavailability) */
 } i2s_config_t;
 
-extern i2s_t *I2S[I2S_NUM_MAX];
+extern volatile i2s_t *I2S[I2S_NUM_MAX];
 
 ICACHE_FLASH_ATTR void i2s_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins);
 ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins);

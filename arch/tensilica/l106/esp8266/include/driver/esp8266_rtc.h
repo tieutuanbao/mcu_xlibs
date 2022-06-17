@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#define RTC (*(rtc_t *)(RTC_BASE))
+#define RTC ((volatile rtc_t *)(RTC_BASE))
 
 typedef struct struct_rtc{
     volatile uint32_t ctrl0;            // 0x00

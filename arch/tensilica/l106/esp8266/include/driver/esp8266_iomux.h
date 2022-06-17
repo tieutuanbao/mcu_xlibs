@@ -15,7 +15,7 @@
 #include "common_macros.h"
 #include "esp8266_regs.h"
 
-#define IOMUX       ((iomux_t*)(IOMUX_BASE))
+#define IOMUX       ((volatile iomux_t*)(IOMUX_BASE))
 
 typedef struct struct_iomux {
     volatile uint32_t conf;    // 0x00

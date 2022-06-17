@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#define GPIO                        ((gpio_t *)(GPIO_BASE))
+#define GPIO                        ((volatile gpio_t *)(GPIO_BASE))
 
 #ifndef GPIO_PIN_COUNT
 #define GPIO_PIN_COUNT              17
