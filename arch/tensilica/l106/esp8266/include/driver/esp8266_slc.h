@@ -68,29 +68,29 @@ typedef struct struct_slc {
     } int_raw;
     union {    // offset: 0x08
         struct {
-            uint32_t frhost_bit0:            1;
-            uint32_t frhost_bit1:            1;
-            uint32_t frhost_bit2:            1;
-            uint32_t frhost_bit3:            1;
-            uint32_t frhost_bit4:            1;
-            uint32_t frhost_bit5:            1;
-            uint32_t frhost_bit6:            1;
-            uint32_t frhost_bit7:            1;
-            uint32_t rx_start:               1;
-            uint32_t tx_start:               1;
-            uint32_t rx_udf:                 1;
-            uint32_t tx_ovf:                 1;
-            uint32_t token0_1to0:            1;
-            uint32_t token1_1to0:            1;
-            uint32_t tx_done:                1;
-            uint32_t tx_suc_eof:             1;
-            uint32_t rx_done:                1;
-            uint32_t rx_eof:                 1;
-            uint32_t tohost:                 1;
-            uint32_t tx_dscr_err:            1;
-            uint32_t rx_dscr_err:            1;
-            uint32_t tx_dscr_empty:          1;
-            uint32_t reserved22:            10;
+            uint32_t frhost_bit0:            1;    // bit 0
+            uint32_t frhost_bit1:            1;    // bit 1
+            uint32_t frhost_bit2:            1;    // bit 2
+            uint32_t frhost_bit3:            1;    // bit 3
+            uint32_t frhost_bit4:            1;    // bit 4
+            uint32_t frhost_bit5:            1;    // bit 5
+            uint32_t frhost_bit6:            1;    // bit 6
+            uint32_t frhost_bit7:            1;    // bit 7
+            uint32_t rx_start:               1;    // bit 8
+            uint32_t tx_start:               1;    // bit 9
+            uint32_t rx_udf:                 1;    // bit 10
+            uint32_t tx_ovf:                 1;    // bit 11
+            uint32_t token0_1to0:            1;    // bit 12
+            uint32_t token1_1to0:            1;    // bit 13
+            uint32_t tx_done:                1;    // bit 14
+            uint32_t tx_suc_eof:             1;    // bit 15
+            uint32_t rx_done:                1;    // bit 16
+            uint32_t rx_eof:                 1;    // bit 17
+            uint32_t tohost:                 1;    // bit 18
+            uint32_t tx_dscr_err:            1;    // bit 19
+            uint32_t rx_dscr_err:            1;    // bit 20
+            uint32_t tx_dscr_empty:          1;    // bit 21
+            uint32_t reserved22:            10;    // bit 22 : 31
         };
         uint32_t val;
     } int_st;
@@ -186,14 +186,14 @@ typedef struct struct_slc {
     } txfifo_pop;    // 0x20
     union {    // offset: 0x24
         struct {
-            uint32_t addr:            20;
-            uint32_t reserved20:       8;
-            uint32_t stop:             1;
-            uint32_t start:            1;
-            uint32_t restart:          1;
-            uint32_t park:             1;
+            volatile uint32_t addr:            20;   // bit 0 : 19
+            volatile uint32_t reserved20:       8;   // bit 20 : 27
+            volatile uint32_t stop:             1;   // bit 28
+            volatile uint32_t start:            1;   // bit 29
+            volatile uint32_t restart:          1;   // bit 30
+            volatile uint32_t park:             1;   // bit 31
         };
-        uint32_t val;
+        volatile uint32_t val;
     } rx_link;
     union {    // offset: 0x28
         struct {
@@ -470,7 +470,7 @@ typedef struct struct_slc {
 #define SLC_RX_LINK_START                           (1U << 29)
 #define SLC_RX_LINK_STOP                            (1U << 28)
 #define SLC_RX_LINK_DESCRIPTOR_ADDR_POS             0
-#define SLC_RX_LINK_DESCRIPTOR_ADDR_MASK            (0x0000ffff << SLC_RX_LINK_DESCRIPTOR_ADDR_POS)
+#define SLC_RX_LINK_DESCRIPTOR_ADDR_MASK            (0x000Fffff << SLC_RX_LINK_DESCRIPTOR_ADDR_POS)
 
 /* Details for TX_LINK register */
 #define SLC_TX_LINK_PARK                            (1U << 31)
@@ -478,7 +478,7 @@ typedef struct struct_slc {
 #define SLC_TX_LINK_START                           (1U << 29)
 #define SLC_TX_LINK_STOP                            (1U << 28)
 #define SLC_TX_LINK_DESCRIPTOR_ADDR_POS             0
-#define SLC_TX_LINK_DESCRIPTOR_ADDR_MASK            (0x0000ffff << SLC_TX_LINK_DESCRIPTOR_ADDR_POS)
+#define SLC_TX_LINK_DESCRIPTOR_ADDR_MASK            (0x000Fffff << SLC_TX_LINK_DESCRIPTOR_ADDR_POS)
 
 /* Details for INTVEC_TO_HOST register */
 #define SLC_INTVEC_TO_HOST_INTVEC_M                 0x000000ff
@@ -541,13 +541,13 @@ typedef struct struct_dma_descriptor {
     uint32_t eof            : 1;
     uint32_t owner          : 1;    // giá trị này có thể bị thay đổi bởi DMA
     void* buf_ptr;
-    struct struct_dma_descriptor *next;
+    volatile struct struct_dma_descriptor *next;
 } dma_descriptor_t;
 
 typedef void (*slc_handler_isr)(void *);
 
 ICACHE_FLASH_ATTR void slc_init(slc_handler_isr slc_isr, void *arg);
-ICACHE_FLASH_ATTR void slc_start(dma_descriptor_t *descr);
+ICACHE_FLASH_ATTR void slc_start(volatile dma_descriptor_t *descr);
 ICACHE_FLASH_ATTR void slc_stop(void);
 
 

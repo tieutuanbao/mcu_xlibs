@@ -22,31 +22,22 @@ extern "C" {
 
 #define GPIO                        ((volatile gpio_t *)(GPIO_BASE))
 
-#ifndef GPIO_PIN_COUNT
-#define GPIO_PIN_COUNT              17
-#endif
-
-#define GPIO_CONF_INTTYPE_POS       7
-#define GPIO_CONF_INTTYPE_MASK      (7U << GPIO_CONF_INTTYPE_POS)
-
-#define RTC_GPIO_IS_VALID_GPIO(gpio_num)     ((gpio_num == 16))    /*!< Check whether it is a valid RTC GPIO number */
-
 /**
  * @brief Cấu trúc thanh ghi GPIO ESP8266
  * 
  */
 typedef struct struct_gpio {
-    volatile uint32_t out;              // 0x00
-    volatile uint32_t out_set;          // 0x04
-    volatile uint32_t out_clear;        // 0x08
-    volatile uint32_t enable_out;       // 0x0c-enable w1ts
-    volatile uint32_t enable_out_set;   // 0x10-enable w1tc
-    volatile uint32_t enable_out_clear; // 0x14
-    volatile uint32_t in;               // 0x18
-    volatile uint32_t status;           // 0x1c
-    volatile uint32_t status_set;       // 0x20-status w1ts
-    volatile uint32_t status_clear;     // 0x24-status w1tc
-    volatile union {
+    volatile uint32_t out;              // offset: 0x00
+    volatile uint32_t out_set;          // offset: 0x04
+    volatile uint32_t out_clear;        // offset: 0x08
+    volatile uint32_t enable_out;       // offset: 0x0c-enable w1ts
+    volatile uint32_t enable_out_set;   // offset: 0x10-enable w1tc
+    volatile uint32_t enable_out_clear; // offset: 0x14
+    volatile uint32_t in;               // offset: 0x18
+    volatile uint32_t status;           // offset: 0x1c
+    volatile uint32_t status_set;       // offset: 0x20-status w1ts
+    volatile uint32_t status_clear;     // offset: 0x24-status w1tc
+    volatile union {                    // offset: 0x28 - 0x64
         struct {
             uint32_t source:        1;
             uint32_t reserved1:     1;
@@ -57,13 +48,24 @@ typedef struct struct_gpio {
             uint32_t reserved3:     21;
         };
         uint32_t val;
-    } pin[16];                          // 0x28 - 0x64
-    volatile uint32_t sigma_delta;      // 0x68
-    volatile uint32_t rtc_calib;        // 0x6c
-    volatile uint32_t rtc_calib_result; // 0x70
+    } pin[16];                          
+    volatile uint32_t sigma_delta;      // offset: 0x68
+    volatile uint32_t rtc_calib;        // offset: 0x6c
+    volatile uint32_t rtc_calib_result; // offset: 0x70
 } gpio_t;
 
 typedef void (* gpio_int_handler_t)(uint8_t gpio_num);
+
+#ifndef GPIO_PIN_COUNT
+#define GPIO_PIN_COUNT              17
+#endif
+
+#define GPIO_PIN_DRIVER_MASK        (1U << 2)
+#define GPIO_CONF_INTTYPE_POS       7
+#define GPIO_CONF_INTTYPE_MASK      (7U << GPIO_CONF_INTTYPE_POS)
+#define GPIO_CONF_WKUP_EN_MASK      (1U << 10)
+
+#define RTC_GPIO_IS_VALID_GPIO(gpio_num)     ((gpio_num == 16))    /*!< Check whether it is a valid RTC GPIO number */
 
 /**
  * @brief Typedef lỗi config GPIO
@@ -128,13 +130,10 @@ typedef struct {
     gpio_int_type_t intr_type;
 } gpio_config_t;
 
-
 ICACHE_FLASH_ATTR void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int_type_t int_type, gpio_int_handler_t handler);
 ICACHE_FLASH_ATTR void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction);
 ICACHE_FLASH_ATTR void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep);
 ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config);
-
-
 
 #ifdef __cplusplus
 }

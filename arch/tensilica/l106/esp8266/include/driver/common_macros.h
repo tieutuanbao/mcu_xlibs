@@ -4,7 +4,6 @@
 #include "osapi.h"
 #include "ets_sys.h"
 #include "bits_string.h"
-#include "mem.h"
 
 /* Define debug logger */
 #define ANSI_COLOR_LOG      "I "

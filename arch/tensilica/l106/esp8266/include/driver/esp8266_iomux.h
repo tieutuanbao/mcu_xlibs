@@ -18,8 +18,8 @@
 #define IOMUX       ((volatile iomux_t*)(IOMUX_BASE))
 
 typedef struct struct_iomux {
-    volatile uint32_t conf;    // 0x00
-    union {
+    volatile uint32_t conf;    // offset:  0x00
+    union {    // offset:  0x04 - 40
         volatile struct {
             uint32_t sleep_oe       : 1;
             uint32_t sleep_sel      : 1;
@@ -39,7 +39,7 @@ typedef struct struct_iomux {
             uint32_t func_high_bit  : 1;
         } rtc_pin;
         volatile uint32_t val;
-    } pin[16]; // 0x04 - 0x40
+    } pin[16];
 } iomux_t;
 
 /* Details for CONF register */
@@ -167,6 +167,7 @@ extern const uint8_t iomux_2_gpio[16];
 extern const uint8_t gpio_2_iomux[16];
 
 
+ICACHE_FLASH_ATTR volatile uint32_t * gpio_iomux_reg(const uint8_t idx_gpio);
 ICACHE_FLASH_ATTR void iomux_set_pullup_flags(uint8_t iomux_num, uint32_t pullup_flags);
 ICACHE_FLASH_ATTR void iomux_set_gpio_function(uint8_t idx_gpio, bool output_enable);
 ICACHE_FLASH_ATTR void iomux_set_function(uint8_t iomux_num, uint32_t iomux_func);

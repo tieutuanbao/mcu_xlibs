@@ -10,9 +10,10 @@
 audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
     dev->last_sample = 0;
     dev->cum_error = 0;
-    dev->index_sample = 0;
     dev->this.config = (driver_config_t)i2s_no_dac_config;
     dev->this.consume = (consume_sample_t)i2s_no_dac_consume_sample;
+    dev->this.start = (output_ctrl_t)i2s_no_dac_start;
+    dev->this.stop = (output_ctrl_t)i2s_no_dac_stop;
     return audio_output_ok;
 }
 
@@ -26,12 +27,10 @@ audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
  * @return FUNC_ON_FLASH 
  */
 FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uint32_t sample_rate, uint8_t bit_per_sample) {
-    os_printf("config: %d, %d, %d\n", num_channel, sample_rate, bit_per_sample);
-
     dev->i2s_config = (i2s_config_t){
         .mode = I2S_MODE_MASTER | I2S_MODE_TX,
-        .sample_rate = 44100,
-        .bits_per_sample = 16,
+        .sample_rate = sample_rate,
+        .bits_per_sample = bit_per_sample,
         .channel_format = (num_channel == 2)? I2S_CHANNEL_FMT_RIGHT_LEFT : I2S_CHANNEL_FMT_ONLY_RIGHT,
         .communication_format = I2S_COMM_FORMAT_I2S,
         .dma_buf_count = 2,
@@ -44,9 +43,14 @@ FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t nu
         .data_in_en = 0
     };
     i2s_dma_init(0, &dev->i2s_config, &pin_config);
-    i2s_dma_start(0);
-    BITS_LOG("Config I2S OK!\r\n");
     return audio_output_ok;
+}
+
+void i2s_no_dac_start(i2s_no_dac_t *dev){
+    i2s_dma_start(0);
+}
+void i2s_no_dac_stop(i2s_no_dac_t *dev){
+    i2s_dma_stop(0);
 }
 
 FUNC_ON_FLASH int16_t i2s_no_dac_amplify(int32_t s) {
@@ -86,7 +90,6 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
         }
         delta_buff[index_sample] = bits;
         // printf("dsbuff: %x\n", delta_buff[index_sample]);
-        dev->index_sample++;
     }
 }
 

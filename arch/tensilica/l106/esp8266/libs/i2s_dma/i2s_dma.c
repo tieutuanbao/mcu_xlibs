@@ -16,19 +16,24 @@
 #include "esp8266_i2s.h"
 #include "esp8266_slc.h"
 
-/* Descriptor Buffer vòng DMA */
-static dma_descriptor_t dma_block_list[DMA_QUEUE_SIZE];
-
-/* Buffer DMA */
-static uint32_t dma_buffer[DMA_QUEUE_SIZE][DMA_BUFFER_SIZE];
-
 /* Cấu trúc queue */
 typedef struct struct_queue {
     void *queue[DMA_QUEUE_SIZE];
-    volatile uint8_t queue_len;
+    uint8_t queue_len;
 } queue_t;
 
-queue_t dma_queue;
+struct {
+    /* Descriptor Buffer vòng DMA */
+    volatile dma_descriptor_t dma_block_list[DMA_QUEUE_SIZE];
+    /* Buffer DMA */
+    volatile uint32_t dma_buffer[DMA_QUEUE_SIZE][DMA_BUFFER_SIZE];
+    volatile queue_t dma_queue;
+    
+    uint32_t *curr_buf;
+    uint32_t curr_buf_pos;               // Position in the current buffer
+} i2s_dma;
+
+
 
 /**
  * @brief Khởi tạo Deskcriptor
@@ -36,62 +41,42 @@ queue_t dma_queue;
  * @return void 
  */
 ICACHE_FLASH_ATTR void init_descriptors_list() {
-    memset(dma_buffer, 0, DMA_QUEUE_SIZE * DMA_BUFFER_SIZE * 4);
-
+    memset((void *)i2s_dma.dma_buffer, 0, sizeof(i2s_dma.dma_buffer));
     for (int i = 0; i < DMA_QUEUE_SIZE; i++) {
-        dma_block_list[i].owner = 1;
-        dma_block_list[i].eof = 1;
-        dma_block_list[i].sub_sof = 0;
-        dma_block_list[i].unused = 0;
-        dma_block_list[i].buf_ptr = (uint32_t *)(&dma_buffer[i][0]);
-        dma_block_list[i].datalen = DMA_BUFFER_SIZE * 4;
-        dma_block_list[i].blocksize = DMA_BUFFER_SIZE * 4;
+        i2s_dma.dma_block_list[i].owner = 1;
+        i2s_dma.dma_block_list[i].eof = 1;
+        i2s_dma.dma_block_list[i].sub_sof = 0;
+        i2s_dma.dma_block_list[i].unused = 0;
+        i2s_dma.dma_block_list[i].buf_ptr = (uint32_t *)(&i2s_dma.dma_buffer[i][0]);
+        i2s_dma.dma_block_list[i].datalen = DMA_BUFFER_SIZE * 4;
+        i2s_dma.dma_block_list[i].blocksize = DMA_BUFFER_SIZE * 4;
         if (i == (DMA_QUEUE_SIZE - 1)) {
-            dma_block_list[i].next = &dma_block_list[0];
+            i2s_dma.dma_block_list[i].next = &i2s_dma.dma_block_list[0];
         } else {
-            dma_block_list[i].next = &dma_block_list[i + 1];
+            i2s_dma.dma_block_list[i].next = &i2s_dma.dma_block_list[i + 1];
         }
     }
-}
-
-/**
- * @brief Trả về con trỏ đến Buffer DMA đã xử lý xong
- * 
- * @return dma_descriptor_t* 
- */
-inline dma_descriptor_t *i2s_dma_get_eof_descriptor()
-{
-    return (dma_descriptor_t*)SLC->rx_eof_des_addr;
-}
-
-/**
- * @brief Kiểm tra ngắt EOF
- * 
- * @return bool : true = Có ngắt EOF
- */
-bool i2s_dma_is_eof_interrupt() {
-    if(SLC->int_st.val & SLC_INT_STATUS_RX_EOF) return true;
-    return false;
 }
 
 void dma_isr_handler(void *args) {
     /* Disable DMA interrupt */
     disable_interrupts(INT_NUM_SLC);
-    if (i2s_dma_is_eof_interrupt()) {
-        dma_descriptor_t *descr = i2s_dma_get_eof_descriptor();
-        memset((void *)descr->buf_ptr, 0x00, DMA_BUFFER_SIZE * 4);
-        if (dma_queue.queue_len >= (DMA_QUEUE_SIZE - 1)) {
-            /* Lấy 1 phần tử đầu Queue */
-            dma_queue.queue_len--;
-            /* Dồn Queue lên đầu */
-            for(uint16_t idx_queue = 0; idx_queue < dma_queue.queue_len; idx_queue++) {
-                dma_queue.queue[idx_queue] = dma_queue.queue[idx_queue + 1];
-            }
-        }
-        dma_queue.queue[dma_queue.queue_len++] = descr->buf_ptr;
-    }
+    bool slc_rx_eof = SLC->int_st.rx_eof;
     /* Clear interrupt */
     SLC->int_clr.val = 0xFFFFFFFF;
+    if (slc_rx_eof == true) {
+        dma_descriptor_t *descr = (dma_descriptor_t *)(SLC->rx_eof_des_addr);
+        memset((void *)descr->buf_ptr, 0x55, DMA_BUFFER_SIZE * 4);
+        if (i2s_dma.dma_queue.queue_len >= (DMA_QUEUE_SIZE - 1)) {
+            /* Lấy 1 phần tử đầu Queue */
+            i2s_dma.dma_queue.queue_len--;
+            /* Dồn Queue lên đầu */
+            for(uint16_t idx_queue = 0; idx_queue < i2s_dma.dma_queue.queue_len; idx_queue++) {
+                i2s_dma.dma_queue.queue[idx_queue] = i2s_dma.dma_queue.queue[idx_queue + 1];
+            }
+        }
+        i2s_dma.dma_queue.queue[i2s_dma.dma_queue.queue_len++] = descr->buf_ptr;
+    }
     /* Enable DMA interrupt */
     enable_interrupts(INT_NUM_SLC);
 }
@@ -114,11 +99,19 @@ ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config
  */
 ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
     init_descriptors_list();
-    slc_start(dma_block_list);
+    slc_start(i2s_dma.dma_block_list);
     i2s_start(i2s_num);
-    BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 }
 
+/**
+ * @brief Hàm dừng I2S và DMA
+ * 
+ * @return void 
+ */
+ICACHE_FLASH_ATTR void i2s_dma_stop(i2s_port_t i2s_num) {
+    slc_stop();
+    i2s_stop(i2s_num);
+}
 /**
  * @brief Hàm truyền I2S qua DMA
  * 
@@ -126,28 +119,38 @@ ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
  * @param frames_len độ dài frame
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
-    uint32_t timeout_queue = 1000;
+void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
+    uint32_t timeout_queue = 1000000;
     while(timeout_queue--) {
-        if(dma_queue.queue_len > 0) {
-            /* Disable DMA interrupt */
-            disable_interrupts(INT_NUM_SLC);
-            /* Lấy ra phần tử đầu */
-            uint32_t *item = dma_queue.queue[0];
-            /* Enable DMA interrupt */
-            enable_interrupts(INT_NUM_SLC);
-            dma_queue.queue_len--;
-            /* Dồn Queue lên đầu */
-            for(uint16_t idx_queue = 0; idx_queue < dma_queue.queue_len; idx_queue++) {
-                dma_queue.queue[idx_queue] = dma_queue.queue[idx_queue + 1];
+        if(i2s_dma.dma_queue.queue_len > 0) {
+            while(frames_len > 0){
+                if((i2s_dma.curr_buf_pos == DMA_BUFFER_SIZE) || (i2s_dma.curr_buf == 0)){
+                    /* Disable DMA interrupt */
+                    disable_interrupts(INT_NUM_SLC);
+                    /* Lấy ra phần tử đầu */
+                    i2s_dma.curr_buf = i2s_dma.dma_queue.queue[0];
+                    i2s_dma.dma_queue.queue_len--;
+                    /* Dồn Queue lên đầu */
+                    for(uint16_t idx_queue = 0; idx_queue < i2s_dma.dma_queue.queue_len; idx_queue++) {
+                        i2s_dma.dma_queue.queue[idx_queue] = i2s_dma.dma_queue.queue[idx_queue + 1];
+                    }
+                    /* Enable DMA interrupt */
+                    enable_interrupts(INT_NUM_SLC);
+                    /* Reset vị trí in buf */
+                    i2s_dma.curr_buf_pos = 0;
+                }
+                /* Đưa dữ liệu vào buffer */
+                uint16_t available = (DMA_BUFFER_SIZE - i2s_dma.curr_buf_pos);
+                if(available > frames_len) available = frames_len;
+                for(; available > 0; available--) {
+                    uint32_t v1 = (uint16_t)(*frames++);
+                    uint32_t v2 = (uint16_t)(*frames++);
+                    i2s_dma.curr_buf[i2s_dma.curr_buf_pos++] = ((v1 << 16) | v2);
+                    frames_len--;
+                }
             }
-            /* Đưa dữ liệu vào buffer */
-            for(uint16_t idx_data = 0; idx_data < frames_len; idx_data++) {
-                uint16_t v1 = (uint16_t)(*frames++);
-                uint16_t v2 = (uint16_t)(*frames++);
-                item[idx_data] = (v1 << 16) | v2;
-            }
-            break;
+            return;
         }
+        // os_delay_us(1);
     }
 }

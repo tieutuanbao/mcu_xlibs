@@ -129,12 +129,7 @@ ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config) {
                 if(gpio_config->dir == GPIO_DIR_OUTPUT){
                     RTC->gpio_cfg[3] =  (((RTC->gpio_cfg[3] & (uint32_t)0xFFFFFFBC)) | 1U);
                 }
-                if ((gpio_config->dir == GPIO_DIR_OPEN_DRAIN) && !RTC_GPIO_IS_VALID_GPIO(idx_gpio)) {
-                    GPIO->pin[idx_gpio].driver = 1;
-                }
-                else {
-                    GPIO->pin[idx_gpio].driver = 0;
-                }
+                GPIO->pin[idx_gpio].driver = 0;
                 /* Chỉ cấu hình pulldown với GPIO 16 */
                 if (gpio_config->pull_down_en) {
                     IOMUX->pin[gpio_2_iomux[idx_gpio]].rtc_pin.pulldown = 1;
@@ -145,7 +140,7 @@ ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config) {
             else {
                 /* Cấu hình in/out */
                 if(gpio_config->dir == GPIO_DIR_OUTPUT) {
-                    GPIO->enable_out_set |= (1U << idx_gpio);
+                    GPIO->enable_out_set = (1U << idx_gpio);
                 }
                 if ((gpio_config->dir == GPIO_DIR_OPEN_DRAIN) && !RTC_GPIO_IS_VALID_GPIO(idx_gpio)) {
                     GPIO->pin[idx_gpio].driver = 1;

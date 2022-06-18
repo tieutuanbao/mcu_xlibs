@@ -1,4 +1,5 @@
 #include "esp8266_wifi_scan.h"
+#include "mem.h"
 
 esp8266_wifi_scan_t esp8266_scanner;
 

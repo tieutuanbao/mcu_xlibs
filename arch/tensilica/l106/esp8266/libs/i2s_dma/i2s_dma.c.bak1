@@ -78,7 +78,7 @@ static int _i2s_bits = 16;
 #define I2SI_BCK 13
 #define I2SI_WS 14
 
-bool ICACHE_FLASH_ATTR i2s_set_bits(int bits)
+bool ICACHE_FLASH_ATTR i2s_dma_set_bits(int bits)
 {
     if (tx || rx || (bits != 16 && bits != 24))
     {
@@ -97,12 +97,12 @@ static bool ICACHE_FLASH_ATTR _i2s_is_full(const i2s_state_t *ch)
     return (ch->curr_slc_buf_pos == DMA_BUFFER_SIZE || ch->curr_slc_buf == NULL) && (ch->slc_queue_len == 0);
 }
 
-bool ICACHE_FLASH_ATTR i2s_is_full()
+bool ICACHE_FLASH_ATTR i2s_dma_is_full()
 {
     return _i2s_is_full(tx);
 }
 
-bool ICACHE_FLASH_ATTR i2s_rx_is_full()
+bool ICACHE_FLASH_ATTR i2s_dma_rx_is_full()
 {
     return _i2s_is_full(rx);
 }
@@ -116,12 +116,12 @@ static bool ICACHE_FLASH_ATTR _i2s_is_empty(const i2s_state_t *ch)
     return (ch->slc_queue_len >= DMA_QUEUE_SIZE - 1);
 }
 
-bool ICACHE_FLASH_ATTR i2s_is_empty()
+bool ICACHE_FLASH_ATTR i2s_dma_is_empty()
 {
     return _i2s_is_empty(tx);
 }
 
-bool ICACHE_FLASH_ATTR i2s_rx_is_empty()
+bool ICACHE_FLASH_ATTR i2s_dma_rx_is_empty()
 {
     return _i2s_is_empty(rx);
 }
@@ -135,12 +135,12 @@ static uint16_t ICACHE_FLASH_ATTR _i2s_available(const i2s_state_t *ch)
     return (DMA_QUEUE_SIZE - ch->slc_queue_len) * DMA_BUFFER_SIZE;
 }
 
-uint16_t ICACHE_FLASH_ATTR i2s_available()
+uint16_t ICACHE_FLASH_ATTR i2s_dma_available()
 {
     return _i2s_available(tx);
 }
 
-uint16_t ICACHE_FLASH_ATTR i2s_rx_available()
+uint16_t ICACHE_FLASH_ATTR i2s_dma_rx_available()
 {
     return _i2s_available(rx);
 }
@@ -217,13 +217,13 @@ static void i2s_slc_isr(void)
     ETS_SLC_INTR_ENABLE();
 }
 
-void ICACHE_FLASH_ATTR i2s_set_callback(void (*callback)(void))
+void ICACHE_FLASH_ATTR i2s_dma_set_callback(void (*callback)(void))
 {
     if (tx)
         tx->callback = callback;
 }
 
-void ICACHE_FLASH_ATTR i2s_rx_set_callback(void (*callback)(void))
+void ICACHE_FLASH_ATTR i2s_dma_rx_set_callback(void (*callback)(void))
 {
     if (rx)
         rx->callback = callback;
@@ -383,22 +383,22 @@ static bool ICACHE_FLASH_ATTR _i2s_write_sample(uint32_t sample, bool nb)
     return true;
 }
 
-bool ICACHE_FLASH_ATTR i2s_write_sample(uint32_t sample)
+bool ICACHE_FLASH_ATTR i2s_dma_write_sample(uint32_t sample)
 {
     return _i2s_write_sample(sample, false);
 }
 
-bool ICACHE_FLASH_ATTR i2s_write_sample_nb(uint32_t sample)
+bool ICACHE_FLASH_ATTR i2s_dma_write_sample_nb(uint32_t sample)
 {
     return _i2s_write_sample(sample, true);
 }
 
-bool ICACHE_FLASH_ATTR i2s_write_lr(int16_t left, int16_t right)
+bool ICACHE_FLASH_ATTR i2s_dma_write_lr(int16_t left, int16_t right)
 {
     int sample = right & 0xFFFF;
     sample = sample << 16;
     sample |= left & 0xFFFF;
-    return i2s_write_sample(sample);
+    return i2s_dma_write_sample(sample);
 }
 
 // writes a buffer of frames into the DMA memory, returns the amount of frames written
@@ -477,15 +477,15 @@ static inline uint16_t _i2s_write_buffer(const int16_t *frames, uint16_t frame_c
     return frames_written;
 }
 
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, true); }
+uint16_t ICACHE_FLASH_ATTR i2s_dma_write_buffer_mono_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, true); }
 
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_mono(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, false); }
+uint16_t ICACHE_FLASH_ATTR i2s_dma_write_buffer_mono(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, true, false); }
 
-uint16_t ICACHE_FLASH_ATTR i2s_write_buffer_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, true); }
+uint16_t ICACHE_FLASH_ATTR i2s_dma_write_buffer_nb(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, true); }
 
-uint16_t i2s_write_buffer(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, false); }
+uint16_t i2s_dma_write(const int16_t *frames, uint16_t frame_count) { return _i2s_write_buffer(frames, frame_count, false, false); }
 
-bool ICACHE_FLASH_ATTR i2s_read_sample(int16_t *left, int16_t *right, bool blocking)
+bool ICACHE_FLASH_ATTR i2s_dma_read_sample(int16_t *left, int16_t *right, bool blocking)
 {
     if (!rx)
     {
@@ -530,7 +530,7 @@ bool ICACHE_FLASH_ATTR i2s_read_sample(int16_t *left, int16_t *right, bool block
     return true;
 }
 
-void ICACHE_FLASH_ATTR i2s_set_rate(uint32_t rate)
+void ICACHE_FLASH_ATTR i2s_dma_set_rate(uint32_t rate)
 { // Rate in HZ
     if (rate == _i2s_sample_rate)
     {
@@ -558,10 +558,10 @@ void ICACHE_FLASH_ATTR i2s_set_rate(uint32_t rate)
     }
 
     // BITS_LOG("set divider.. \r\n")
-    i2s_set_dividers(sbd_div_best, scd_div_best);
+    i2s_dma_set_dividers(sbd_div_best, scd_div_best);
 }
 
-void ICACHE_FLASH_ATTR i2s_set_dividers(uint8_t div1, uint8_t div2)
+void ICACHE_FLASH_ATTR i2s_dma_set_dividers(uint8_t div1, uint8_t div2)
 {
     // BITS_LOG("setring divider.. \r\n")
     // Ensure dividers fit in bit fields
@@ -596,24 +596,22 @@ void ICACHE_FLASH_ATTR i2s_set_dividers(uint8_t div1, uint8_t div2)
     BITS_LOG("end set divider.. \r\n")
 }
 
-float ICACHE_FLASH_ATTR i2s_get_real_rate()
+float ICACHE_FLASH_ATTR i2s_dma_get_real_rate()
 {
     return (float)(160000000.0) / (_i2s_bits * 2) / ((I2S[0]->conf.val >> I2S_CONF_BCK_DIV_POS) & 0x3F) / ((I2S[0]->conf.val >> I2S_CONF_CLKM_DIV_POS) & 0x3F);
 }
 
-bool ICACHE_FLASH_ATTR i2s_rxtx_begin(bool enableRx, bool enableTx)
+bool ICACHE_FLASH_ATTR i2s_dma_rxtx_begin(bool enableRx, bool enableTx)
 {
-    return i2s_rxtxdrive_begin(enableRx, enableTx, true, true);
+    return i2s_dma_rxtxdrive_begin(enableRx, enableTx, true, true);
 }
 
-bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool driveRxClocks, bool driveTxClocks)
-{
+bool ICACHE_FLASH_ATTR i2s_dma_rxtxdrive_begin(bool enableRx, bool enableTx, bool driveRxClocks, bool driveTxClocks) {
     BITS_LOGD("1 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
-
     if (tx || rx)
     {
         BITS_LOG("Stop I2S r\n");
-        i2s_end(); // Stop and os_free any ongoing stuff
+        i2s_dma_end(); // Stop and os_free any ongoing stuff
     }
     BITS_LOGD("2 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     if (enableTx)
@@ -634,7 +632,6 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
         }
     }
     BITS_LOGD("3 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
-
     if (enableRx)
     {
         rx = (i2s_state_t *)malloc(1 * sizeof(*rx));
@@ -642,7 +639,7 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
         if (!rx)
         {
             BITS_LOGE("Error allocate Tx\r\n");
-            i2s_end();    // Clean up any TX or pin changes
+            i2s_dma_end();    // Clean up any TX or pin changes
             return false; // OOM error!
         }
         rx->driveClocks = driveRxClocks;
@@ -653,28 +650,28 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
         }
         iomux_set_function(gpio_2_iomux[12], IOMUX_GPIO12_FUNC_I2SI_DATA);
     }
-    BITS_LOGD("4 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 
+    BITS_LOGD("4 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     if (!i2s_slc_begin())
     {
         BITS_LOGE("Error allocate SLC\r\n");
-        i2s_end();
+        i2s_dma_end();
         return false;
     }
-    BITS_LOGD("5 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 
+    BITS_LOGD("5 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     i2c_writeReg_Mask_def(i2c_bbpll, i2c_bbpll_en_audio_clock_out, 1);
 
     I2S[0]->int_clr.val = 0x3F;
     I2S[0]->int_ena.val = 0;
-    BITS_LOGD("6 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 
+    BITS_LOGD("6 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     // Reset I2S
     I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
     I2S[0]->conf.val |= I2S_CONF_RESET_MASK;
     I2S[0]->conf.val &= ~(I2S_CONF_RESET_MASK);
-    BITS_LOGD("7 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
 
+    BITS_LOGD("7 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     // I2STXFMM, I2SRXFMM=0 => 16-bit, dual channel data shifted in/out
     I2S[0]->fifo_conf.val &= ~(I2S_FIFO_CONF_DESCRIPTOR_ENABLE | I2S_FIFO_CONF_TX_FIFO_MOD_MASK | I2S_FIFO_CONF_RX_FIFO_MOD_MASK); // Set RX/TX FIFO_MOD=0 and disable DMA (FIFO only)
     if (_i2s_bits == 24)
@@ -685,7 +682,7 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
 
     // I2STXCMM, I2SRXCMM=0 => Dual channel mode
     I2S[0]->conf_chan.val &= ~(I2S_CONF_CHANNELS_TX_CHANNEL_MOD_MASK | I2S_CONF_CHANNELS_RX_CHANNEL_MOD_MASK); // Set RX/TX CHAN_MOD=0
-
+    
     BITS_LOGD("8 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     // Ensure a sane clock is set, but don't change any pre-existing ones.
     // But we also need to make sure the other bits weren't reset by a previous
@@ -693,9 +690,9 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
     // value (writing all needed config bits in the process
     uint32_t save_rate = _i2s_sample_rate;
     _i2s_sample_rate = 0;
-    i2s_set_rate(save_rate ? save_rate : 44100);
-    BITS_LOGD("9 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+    i2s_dma_set_rate(save_rate ? save_rate : 44100);
 
+    BITS_LOGD("9 - I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
     if (rx)
     {
         // Need to prime the # of samples to receive in the engine
@@ -708,12 +705,12 @@ bool ICACHE_FLASH_ATTR i2s_rxtxdrive_begin(bool enableRx, bool enableTx, bool dr
 }
 
 
-void ICACHE_FLASH_ATTR i2s_begin()
+void ICACHE_FLASH_ATTR i2s_dma_begin()
 {
-    i2s_rxtx_begin(false, true);
+    i2s_dma_rxtx_begin(false, true);
 }
 
-void ICACHE_FLASH_ATTR i2s_end()
+void ICACHE_FLASH_ATTR i2s_dma_end()
 {
     // Disable any I2S send or receive
     // Maybe not needed since we're resetting on the next line...
@@ -751,10 +748,10 @@ void ICACHE_FLASH_ATTR i2s_end()
 }
 
 
-void ICACHE_FLASH_ATTR i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_cfg, i2s_pin_config_t *pins){
-    i2s_rxtxdrive_begin(0, 1, 0, 0);
-    i2s_set_rate(i2s_cfg->sample_rate);
+void ICACHE_FLASH_ATTR i2s_dma_init(i2s_port_t i2s_dma_num, i2s_config_t *i2s_cfg, i2s_pin_config_t *pins){
+    i2s_dma_rxtxdrive_begin(0, 1, 0, 0);
+    i2s_dma_set_rate(i2s_cfg->sample_rate);
 }
-void ICACHE_FLASH_ATTR i2s_dma_start(i2s_port_t i2s_num){
+void ICACHE_FLASH_ATTR i2s_dma_start(i2s_port_t i2s_dma_num){
 
 }

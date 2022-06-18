@@ -24,6 +24,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_openfile(audio_gen_wav_t *dev, u
     memset(dev->last_sample, 0, sizeof(dev->last_sample));
     dev->num_sample_reading = 1;
     dev->status = audio_gen_wav_running;
+
     return audio_gen_wav_ok;
 }
 
@@ -38,7 +39,8 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_
     /* Đăng ký driver */
     dev->driver = driver;
     /* Cấu hình driver */
-    return dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
+    dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
+    dev->driver->start(dev->driver);
 }
 
 /**
@@ -133,6 +135,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
     }
     if (audio_get_next_data(dev) == audio_gen_wav_file_end) {
         dev->status = audio_gen_wav_stopped;
+        // dev->driver->stop(dev->driver);
         return audio_gen_wav_stopped;
     }
     return audio_gen_wav_running;
