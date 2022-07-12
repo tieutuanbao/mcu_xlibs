@@ -1,7 +1,6 @@
 #ifndef __I2S_NO_DAC_H
 #define __I2S_NO_DAC_H
 
-#include "c_types.h"
 #include "osapi.h"
 #include "audio_output.h"
 #include "i2s.h"

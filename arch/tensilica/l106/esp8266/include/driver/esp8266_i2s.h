@@ -14,7 +14,6 @@
 
 #include "esp8266_regs.h"
 #include "common_macros.h"
-#include "c_types.h"
 #include "esp8266_sdk_function.h"
 
 #define I2S0    ((volatile i2s_t *)I2S_BASE)

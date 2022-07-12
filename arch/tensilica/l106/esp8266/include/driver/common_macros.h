@@ -2,15 +2,18 @@
 #define __PORT_H
 
 #include "osapi.h"
+#include "mem.h"
 #include "ets_sys.h"
 #include "bits_string.h"
 
 /* Define debug logger */
 #define ANSI_COLOR_LOG      "I "
+#define ANSI_COLOR_WARN     "W "
 #define ANSI_COLOR_ERROR    "\x1b[31mE "
 #define ANSI_COLOR_DEBUG    "\x1b[33mD "
 
 #define BITS_LOG( ... )     printf(ANSI_COLOR_LOG __VA_ARGS__);
+#define BITS_LOGW( ... )    printf(ANSI_COLOR_LOG __VA_ARGS__);
 #define BITS_LOGD( ... )    printf(ANSI_COLOR_DEBUG __VA_ARGS__); \
                             printf("\033[0m");
 #define BITS_LOGE( ... )    printf(ANSI_COLOR_ERROR __VA_ARGS__); \

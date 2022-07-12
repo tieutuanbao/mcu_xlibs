@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "c_types.h"
 
 #include "audio_output.h"
 #include "audio_output_i2s_noDAC.h"

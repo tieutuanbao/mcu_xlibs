@@ -2,7 +2,6 @@
 #define __AUDIO_OUTPUT_H
 
 #include "port_macros.h"
-#include "c_types.h"
 
 typedef enum {
     audio_output_ok,

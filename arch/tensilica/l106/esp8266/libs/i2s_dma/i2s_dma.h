@@ -15,7 +15,6 @@
 
 #include "common_macros.h"
 #include "esp8266_i2s.h"
-#include "c_types.h"
 
 #define DMA_BUFFER_SIZE         128
 #define DMA_QUEUE_SIZE          4
