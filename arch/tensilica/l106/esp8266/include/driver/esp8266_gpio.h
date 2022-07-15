@@ -134,6 +134,7 @@ ICACHE_FLASH_ATTR void gpio_set_interrupt(const uint8_t gpio_num, const gpio_int
 ICACHE_FLASH_ATTR void gpio_enable(const uint8_t gpio_num, const gpio_dir_t direction);
 ICACHE_FLASH_ATTR void gpio_set_pullup(uint8_t gpio_num, bool enabled, bool enabled_during_sleep);
 ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config);
+ICACHE_FLASH_ATTR void gpio_set_iomux_function(const uint8_t gpio_num, uint32_t func);
 
 #ifdef __cplusplus
 }

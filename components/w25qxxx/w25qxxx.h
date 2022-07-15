@@ -15,9 +15,50 @@
 
 #include <stdint.h>
 
-#define W25QXXX_PAGE_SIZE            0x100
-#define W25QXXX_SECTOR_SIZE        0x1000
-#define W25QXXX_BLOCK_SIZE        0x10000
+#define W25QXXX_PAGE_SIZE       0x100
+#define W25QXXX_SECTOR_SIZE     0x1000
+#define W25QXXX_BLOCK_SIZE      0x10000
+
+#define FLASH_ID(n, re, qr, pp, es, ces, id, psize, ssize, size) \
+{                                   \
+    .name = n,                      \
+    .read_cmd = re,                 \
+    .qread_cmd = qr,                \
+    .pprog_cmd = pp,                \
+    .erase_cmd = es,                \
+    .chip_erase_cmd = ces,          \
+    .device_id = id,                \
+    .pagesize = psize,              \
+    .sectorsize = ssize,            \
+    .size_in_bytes = size,          \
+}
+
+#define FRAM_ID(n, re, qr, pp, id, size) \
+{                                   \
+    .name = n,                      \
+    .read_cmd = re,                 \
+    .qread_cmd = qr,                \
+    .pprog_cmd = pp,                \
+    .erase_cmd = 0x00,              \
+    .chip_erase_cmd = 0x00,         \
+    .device_id = id,                \
+    .pagesize = 0,                  \
+    .sectorsize = 0,                \
+    .size_in_bytes = size,          \
+}
+
+typedef struct flash_device {
+    const char *name;
+    uint8_t read_cmd;
+    uint8_t qread_cmd;
+    uint8_t pprog_cmd;
+    uint8_t erase_cmd;
+    uint8_t chip_erase_cmd;
+    uint32_t device_id;
+    uint32_t pagesize;
+    uint32_t sectorsize;
+    uint32_t size_in_bytes;
+} flash_device_t;
 
 typedef enum {
     W25Q10        = 0XEF10,

@@ -16,13 +16,13 @@
 #include "common_macros.h"
 #include "esp8266_sdk_function.h"
 
-#define I2S0    ((volatile i2s_t *)I2S_BASE)
+#define I2S(n)      ((volatile i2s_t *)(I2S_BASE + (n) * 0x30))
 
 /**
  * @brief Cấu trúc thanh ghi I2S ESP8266
  * 
  */
-typedef struct struct_i2s {
+typedef volatile struct struct_i2s {
     volatile uint32_t txfifo;           // 0x00
     volatile uint32_t rxfifo;           // 0x04
     union {    // offset: 0x08

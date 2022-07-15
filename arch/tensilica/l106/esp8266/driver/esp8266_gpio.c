@@ -172,3 +172,9 @@ ICACHE_FLASH_ATTR gpio_err_t gpio_config(gpio_config_t *gpio_config) {
     }
     return GPIO_OK;
 }
+
+ICACHE_FLASH_ATTR void gpio_set_iomux_function(const uint8_t gpio_num, uint32_t func) {
+    uint8_t iomux_num = gpio_2_iomux[gpio_num];
+    uint32_t prev = IOMUX->pin[iomux_num].val & ~IOMUX_PIN_FUNC_MASK;
+    IOMUX->pin[iomux_num].val = func | prev;
+}

@@ -28,6 +28,11 @@ extern "C" {
 #define I2S_BASE        0x60000E00
 #define UART1_BASE      0x60000F00
 
+#define MASK_BIT(n)     (1 << (n))
+
+#define CACHE_FLASH_CTRL_REG    (*((volatile uint32_t *)(0x3ff00000 + 0x0c)))
+#define CACHE_READ_EN           (8)
+
 #ifdef __cplusplus
 }
 #endif  /* end of __cplusplus */

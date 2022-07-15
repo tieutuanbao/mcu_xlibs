@@ -43,8 +43,8 @@ typedef struct struct_iomux {
 } iomux_t;
 
 /* Details for CONF register */
-#define IOMUX_CONF_SPI0_CLOCK_EQU_SYS_CLOCK  (1U << 8)
-#define IOMUX_CONF_SPI1_CLOCK_EQU_SYS_CLOCK  (1U << 9)
+#define IOMUX_CONF_SPI0_CLOCK_EQU_SYS_CLOCK  8
+#define IOMUX_CONF_SPI1_CLOCK_EQU_SYS_CLOCK  9
 
 /* Details for pin registers */
 #define IOMUX_PIN_OUTPUT_ENABLE             (1U << 0)
