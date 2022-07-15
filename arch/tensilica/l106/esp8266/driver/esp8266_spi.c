@@ -73,8 +73,7 @@ flashchip_t sys_flashchip = {
  * @return true 
  * @return false 
  */
-bool spi_init(uint8_t bus, spi_mode_t mode, uint32_t freq_divider, bool msb, spi_endianness_t endianness, bool minimal_pins)
-{
+ICACHE_FLASH_ATTR bool spi_init(uint8_t bus, spi_mode_t mode, uint32_t freq_divider, bool msb, spi_endianness_t endianness, bool minimal_pins) {
     switch (bus)
     {
         case 0:
@@ -119,7 +118,7 @@ bool spi_init(uint8_t bus, spi_mode_t mode, uint32_t freq_divider, bool msb, spi
  * @return true 
  * @return false 
  */
-static inline bool spi_set_settings(uint8_t bus, const spi_settings_t *s)
+ICACHE_FLASH_ATTR static inline bool spi_set_settings(uint8_t bus, const spi_settings_t *s)
 {
     return spi_init(bus, s->mode, s->freq_divider, s->msb, s->endianness, s->minimal_pins);
 }
@@ -412,7 +411,7 @@ bool spi_erase_sector(uint32_t addr) {
      * @brief Cho phép ngắt
      */
     Cache_Read_Enable(0, 0, 1);
-    vPortExitCritical();
+    ETS_INTR_UNLOCK();
 
     return true;
 }
