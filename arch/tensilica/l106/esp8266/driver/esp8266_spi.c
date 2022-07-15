@@ -33,6 +33,10 @@
 #define _SPI_BUF_SIZE 64
 #define __min(a,b) ((a > b) ? (b):(a))
 
+
+#define SPI_WRITE_MAX_SIZE  64
+#define SPI_READ_MAX_SIZE   60
+
 static bool _minimal_pins[2] = {false, false};
 
 flashchip_t sys_flashchip = {
@@ -198,6 +202,67 @@ void spi_set_frequency_div(uint8_t bus, uint32_t divider) {
     }
 }
 
+inline static void spi_wait_ready(void) {
+    /* Wait for SPI state machine ready */
+    while(SPI(0)->ext2 & 0x07);
+}
+
+static bool spi_is_ready(void) {
+    spi_wait_ready();
+    SPI(0)->rd_status.val = 0;
+    /* Issue read status command */
+    SPI(0)->cmd.flash_rdsr = 1;
+    while(SPI(0)->cmd.val != 0);
+    uint32_t status_value = SPI(0)->rd_status.val;
+    return (status_value & 0x01) == 0;
+}
+
+static void spi_write_enable(void) {
+    while(!spi_is_ready());
+    SPI(0)->cmd.flash_wren = 1;
+    while(SPI(0)->cmd.val != 0);
+}
+
+static inline void spi_write_data(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size)
+{
+    uint32_t words = size >> 2;
+    if (size & 0b11) {
+        words++;
+    }
+
+    while(!spi_is_ready());
+    SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
+    memcpy((void*)SPI(0)->data_buf, buf, words << 2);
+    __asm__ volatile("memw");
+    spi_write_enable();
+    SPI(0)->cmd.flash_pp = 1;
+    while (SPI(0)->cmd.val);
+}
+
+static bool spi_write_page(flashchip_t *flashchip, uint32_t dest_addr, uint8_t *buf, uint32_t size) {
+    if (flashchip->page_size < size + (dest_addr % flashchip->page_size)) {
+        return false;
+    }
+    if (size < 1) {
+        return true;
+    }
+    while (size >= SPI_WRITE_MAX_SIZE) {
+        spi_write_data(flashchip, dest_addr, buf, SPI_WRITE_MAX_SIZE);
+
+        size -= SPI_WRITE_MAX_SIZE;
+        dest_addr += SPI_WRITE_MAX_SIZE;
+        buf += SPI_WRITE_MAX_SIZE;
+
+        if (size < 1) {
+            return true;
+        }
+    }
+
+    spi_write_data(flashchip, dest_addr, buf, size);
+
+    return true;
+}
+
 /**
  * @brief Hàm ghi flash spi theo Byte
  * 
@@ -213,7 +278,7 @@ bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
     uint32_t full_pages;
     uint32_t bytes_remaining;
 
-    bool result = false;
+    bool result = true;
 
     if (buf) {
         /**
@@ -234,7 +299,8 @@ bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
                 result = false;
                 goto spi_write_byte_err;
             }
-        } else {
+        }
+        else {
             if (!spi_write_page(&sys_flashchip, addr, buf, write_bytes_to_page)) {
                 result = false;
                 goto spi_write_byte_err;
@@ -257,7 +323,6 @@ bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
                 goto spi_write_byte_err;
             }
         }
-
 spi_write_byte_err:
         Cache_Read_Enable(0, 0, 1);
         ETS_INTR_UNLOCK();
@@ -274,19 +339,80 @@ spi_write_byte_err:
  * @return true 
  * @return false 
  */
-bool spi_read_align_byte(uint32_t dest_addr, uint8_t *buf, uint32_t size)
-{
-    bool result = false;
-
+bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
+    bool result = true;
     if (buf) {
-        vPortEnterCritical();
+        /**
+         * @brief Vô hiệu hóa các ngắt 
+         */
+        ETS_INTR_LOCK();
         Cache_Read_Disable();
+        /**
+         * @brief Bắt đầu Đọc
+         */
+        if (size < 1) {
+            result = false;
+            goto spi_read_byte_err;
+        }
+        if ((addr + size) > sys_flashchip.chip_size) {
+            result = false;
+            goto spi_read_byte_err;
+        }
+        while (size >= SPI_READ_MAX_SIZE) {
+            SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
+            SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
+            while(SPI(0)->cmd.val) {};
+            __asm__ volatile("memw");
+            memcpy(buf, (const void*)SPI(0)->data_buf, size);
 
-        result = read_data(&sys_flashchip, dest_addr, buf, size);
-
+            buf += SPI_READ_MAX_SIZE;
+            size -= SPI_READ_MAX_SIZE;
+            addr += SPI_READ_MAX_SIZE;
+        }
+        if (size > 0) {
+            SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
+            SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
+            while(SPI(0)->cmd.val) {};
+            __asm__ volatile("memw");
+            memcpy(buf, (const void*)SPI(0)->data_buf, size);
+        }
+spi_read_byte_err:
         Cache_Read_Enable(0, 0, 1);
-        vPortExitCritical();
+        ETS_INTR_UNLOCK();
     }
-
     return result;
+}
+bool spi_erase_sector(uint32_t addr) {
+    if ((addr + sys_flashchip.sector_size) > sys_flashchip.chip_size) {
+        return false;
+    }
+    if (addr & 0xFFF) {
+        return false;
+    }
+    /**
+     * @brief Vô hiệu hóa các ngắt 
+     */
+    ETS_INTR_LOCK();
+    Cache_Read_Disable();
+    /**
+     * @brief Cho phép ghi flash 
+     */
+    spi_write_enable();
+    /**
+     * @brief Xóa sector 
+     */
+    SPI(0)->addr = addr & 0x00FFFFFF;
+    SPI(0)->cmd.val = SPI_CMD_SE;
+    while (SPI(0)->cmd.val) {};
+    /**
+     * @brief Chờ xóa xong
+     */
+    while(spi_is_ready() == false);
+    /**
+     * @brief Cho phép ngắt
+     */
+    Cache_Read_Enable(0, 0, 1);
+    vPortExitCritical();
+
+    return true;
 }

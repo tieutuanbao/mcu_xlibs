@@ -236,6 +236,21 @@ typedef volatile struct struct_spi {
     } ext3;
 } spi_t;
 
+#define SPI_CMD_READ                        (31)
+#define SPI_CMD_WRITE_ENABLE                (30)
+#define SPI_CMD_WRITE_DISABLE               (29)
+#define SPI_CMD_READ_ID                     (28)
+#define SPI_CMD_READ_SR                     (27)
+#define SPI_CMD_WRITE_SR                    (26)
+#define SPI_CMD_PP                          (25)
+#define SPI_CMD_SE                          (24)
+#define SPI_CMD_BE                          (23)
+#define SPI_CMD_CE                          (22)
+#define SPI_CMD_DP                          (21)
+#define SPI_CMD_RES                         (20)
+#define SPI_CMD_HPM                         (19)
+#define SPI_CMD_USR                         (18)
+
 #define SPI_CTRL0_WR_BIT_ORDER              (26)
 #define SPI_CTRL0_RD_BIT_ORDER              (25)
 #define SPI_CTRL0_QIO_MODE                  (24)
@@ -352,6 +367,8 @@ typedef struct
 extern void Cache_Read_Disable(void);
 extern void Cache_Read_Enable(uint32, uint32, uint32);
 
+#define SPI_FLASH_SEC_SIZE      4096
+
 /**
  * @brief Initalize SPI bus
  * Initalize specified SPI bus and setup appropriate pins:
@@ -377,6 +394,9 @@ extern void Cache_Read_Enable(uint32, uint32, uint32);
  * \return false when error
  */
 bool spi_init(uint8_t bus, spi_mode_t mode, uint32_t freq_divider, bool msb, spi_endianness_t endianness, bool minimal_pins);
+bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+bool spi_erase_sector(uint32_t addr);
 
 
 #ifdef __cplusplus
