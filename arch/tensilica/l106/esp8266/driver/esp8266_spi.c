@@ -9,11 +9,10 @@
  * 
  */
 
-#include "esp8266_spi.h"
-
+#include <string.h>
 #include "esp8266_iomux.h"
 #include "esp8266_gpio.h"
-#include <string.h>
+#include "esp8266_spi.h"
 
 #define _SPI0_SCK_GPIO  6
 #define _SPI0_MISO_GPIO 7
@@ -123,7 +122,7 @@ ICACHE_FLASH_ATTR static inline bool spi_set_settings(uint8_t bus, const spi_set
     return spi_init(bus, s->mode, s->freq_divider, s->msb, s->endianness, s->minimal_pins);
 }
 
-void spi_set_mode(uint8_t bus, spi_mode_t mode)
+ICACHE_FLASH_ATTR void spi_set_mode(uint8_t bus, spi_mode_t mode)
 {
     bool cpha = (uint8_t)mode & 1;
     bool cpol = (uint8_t)mode & 2;
@@ -143,7 +142,7 @@ void spi_set_mode(uint8_t bus, spi_mode_t mode)
         SPI(bus)->pin.val &= ~MASK_BIT(SPI_PIN_IDLE_EDGE);
 }
 
-spi_mode_t spi_get_mode(uint8_t bus)
+ICACHE_FLASH_ATTR spi_mode_t spi_get_mode(uint8_t bus)
 {
     uint8_t cpha = SPI(bus)->user0.val & SPI_USER0_CLOCK_OUT_EDGE ? 1 : 0;
     uint8_t cpol = SPI(bus)->pin.val & SPI_PIN_IDLE_EDGE ? 2 : 0;
@@ -157,7 +156,7 @@ spi_mode_t spi_get_mode(uint8_t bus)
  * @param msb true: MSB ; false: LSB
  * @param endianness 
  */
-void spi_set_msb(uint8_t bus, bool msb)
+ICACHE_FLASH_ATTR void spi_set_msb(uint8_t bus, bool msb)
 {
     if (msb)
         SPI(bus)->ctrl0.val &= ~(MASK_BIT(SPI_CTRL0_WR_BIT_ORDER) | MASK_BIT(SPI_CTRL0_RD_BIT_ORDER));
@@ -171,7 +170,7 @@ void spi_set_msb(uint8_t bus, bool msb)
  * @param bus 
  * @param endianness 
  */
-void spi_set_endianness(uint8_t bus, spi_endianness_t endianness)
+ICACHE_FLASH_ATTR void spi_set_endianness(uint8_t bus, spi_endianness_t endianness)
 {
     if (endianness == SPI_BIG_ENDIAN)
         SPI(bus)->user0.val |= (MASK_BIT(SPI_USER0_WR_BYTE_ORDER) | MASK_BIT(SPI_USER0_RD_BYTE_ORDER));
@@ -185,7 +184,7 @@ void spi_set_endianness(uint8_t bus, spi_endianness_t endianness)
  * @param bus 
  * @param divider 
  */
-void spi_set_frequency_div(uint8_t bus, uint32_t divider) {
+ICACHE_FLASH_ATTR void spi_set_frequency_div(uint8_t bus, uint32_t divider) {
     uint32_t predivider = (divider & 0xffff) - 1;
     uint32_t count = (divider >> 16) - 1;
     if (count || predivider) {
@@ -236,6 +235,20 @@ static inline void spi_write_data(flashchip_t *chip, uint32_t addr, uint8_t *buf
     spi_write_enable();
     SPI(0)->cmd.flash_pp = 1;
     while (SPI(0)->cmd.val);
+}
+
+void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size) {
+    /**
+     * @brief Vô hiệu hóa các ngắt 
+     */
+    ETS_INTR_LOCK();
+    Cache_Read_Disable();
+
+    spi_write_data(&sys_flashchip, addr, buf, size);
+    
+spi_write_byte_err:
+    Cache_Read_Enable(0, 0, 1);
+    ETS_INTR_UNLOCK();
 }
 
 static bool spi_write_page(flashchip_t *flashchip, uint32_t dest_addr, uint8_t *buf, uint32_t size) {
@@ -329,6 +342,13 @@ spi_write_byte_err:
     return result;
 }
 
+static inline void read_block(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size){
+    SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
+    SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
+    while(SPI(0)->cmd.val) {};
+    __asm__ volatile("memw");
+    memcpy(buf, (const void*)SPI(0)->data_buf, size);
+}
 /**
  * @brief Hàm đọc SPI theo Byte
  * 
@@ -354,26 +374,18 @@ bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
             goto spi_read_byte_err;
         }
         if ((addr + size) > sys_flashchip.chip_size) {
+            BITS_LOGE("Flash size out of mem!\r\n");
             result = false;
             goto spi_read_byte_err;
         }
         while (size >= SPI_READ_MAX_SIZE) {
-            SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
-            SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
-            while(SPI(0)->cmd.val) {};
-            __asm__ volatile("memw");
-            memcpy(buf, (const void*)SPI(0)->data_buf, size);
-
+            read_block(&sys_flashchip, addr, buf, SPI_READ_MAX_SIZE);
             buf += SPI_READ_MAX_SIZE;
             size -= SPI_READ_MAX_SIZE;
             addr += SPI_READ_MAX_SIZE;
         }
         if (size > 0) {
-            SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
-            SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
-            while(SPI(0)->cmd.val) {};
-            __asm__ volatile("memw");
-            memcpy(buf, (const void*)SPI(0)->data_buf, size);
+            read_block(&sys_flashchip, addr, buf, size);
         }
 spi_read_byte_err:
         Cache_Read_Enable(0, 0, 1);
@@ -401,8 +413,8 @@ bool spi_erase_sector(uint32_t addr) {
      * @brief Xóa sector 
      */
     SPI(0)->addr = addr & 0x00FFFFFF;
-    SPI(0)->cmd.val = SPI_CMD_SE;
-    while (SPI(0)->cmd.val) {};
+    SPI(0)->cmd.flash_se = 1;
+    while (SPI(0)->cmd.val);
     /**
      * @brief Chờ xóa xong
      */

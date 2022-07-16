@@ -1,7 +1,6 @@
 #ifndef __AUDIO_GEN_WAV_H
 #define __AUDIO_GEN_WAV_H
 
-#include <stdio.h>
 #include <math.h>
 
 #include "audio_output.h"

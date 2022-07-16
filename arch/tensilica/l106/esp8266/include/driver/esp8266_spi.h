@@ -12,17 +12,8 @@
 #ifndef __ESP8266_SPI_H
 #define __ESP8266_SPI_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include "c_types.h"
-
 #include "esp8266_regs.h"
-#include "esp8266_clocks.h"
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include "common_macros.h"
 
 #define SPI(i)      ((volatile spi_t *)(SPI_BASE - ((i) * 0x100)))
 
@@ -394,17 +385,14 @@ extern void Cache_Read_Enable(uint32, uint32, uint32);
  * \return false when error
  */
 ICACHE_FLASH_ATTR bool spi_init(uint8_t bus, spi_mode_t mode, uint32_t freq_divider, bool msb, spi_endianness_t endianness, bool minimal_pins);
-ICACHE_FLASH_ATTR void spi_set_frequency_div(uint8_t bus, uint32_t divider);
-ICACHE_FLASH_ATTR void spi_set_mode(uint8_t bus, spi_mode_t mode);
-ICACHE_FLASH_ATTR void spi_set_msb(uint8_t bus, bool msb);
-ICACHE_FLASH_ATTR void spi_set_endianness(uint8_t bus, spi_endianness_t endianness);
-ICACHE_FLASH_ATTR bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
-ICACHE_FLASH_ATTR bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
-ICACHE_FLASH_ATTR bool spi_erase_sector(uint32_t addr);
+extern ICACHE_FLASH_ATTR void spi_set_frequency_div(uint8_t bus, uint32_t divider);
+extern ICACHE_FLASH_ATTR void spi_set_mode(uint8_t bus, spi_mode_t mode);
+extern ICACHE_FLASH_ATTR void spi_set_msb(uint8_t bus, bool msb);
+extern ICACHE_FLASH_ATTR void spi_set_endianness(uint8_t bus, spi_endianness_t endianness);
+bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+bool spi_erase_sector(uint32_t addr);
 
-
-#ifdef __cplusplus
-}
-#endif
+void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size);
 
 #endif
