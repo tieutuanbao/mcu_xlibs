@@ -275,7 +275,7 @@ ICACHE_FLASH_ATTR void i2s_start(i2s_port_t i2s_num) {
     I2S(i2s_num)->fifo_conf.dscr_en = 1;
     /* Start transmission */
     I2S(i2s_num)->conf.tx_start = 1;
-    BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S[0]->conf.val, I2S[0]->int_clr.val, I2S[0]->int_ena.val, I2S[0]->fifo_conf.val, I2S[0]->conf_chan.val, I2S[0]->rx_eof_num);
+    BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S(i2s_num)->conf.val, I2S(i2s_num)->int_clr.val, I2S(i2s_num)->int_ena.val, I2S(i2s_num)->fifo_conf.val, I2S(i2s_num)->conf_chan.val, I2S(i2s_num)->rx_eof_num);
 }
 
 /**

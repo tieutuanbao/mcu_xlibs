@@ -11,7 +11,7 @@
 #ifndef __DNS_SERVER_H
 #define __DNS_SERVER_H
 
-#include "port_macro.h"
+#include "port_macros.h"
 #include <c_types.h>
 #include "lwip/ip_addr.h"
 #include "lwipopts.h"
@@ -70,13 +70,13 @@ typedef struct {
 
 typedef struct espconn dns_server_t;
 
-dns_server_t *FUNC_ON_FLASH dns_server_init(uint16_t port, char *domain_name, ip_addr_t resolve_ip);
-void FUNC_ON_FLASH dns_server_reply_error(  dns_server_t *dev,
+FUNC_ON_FLASH dns_server_t *dns_server_init(uint16_t port, char *domain_name, ip_addr_t resolve_ip);
+void dns_server_reply_error(  dns_server_t *dev,
                                             dns_header_t *dns_header,
                                             dns_reply_code_t rep_code,
                                             uint8_t *query,
                                             size_t query_length);
-void FUNC_ON_FLASH dns_server_reply_ip( dns_server_t *dev,
+FUNC_ON_FLASH void FUNC_ON_FLASH dns_server_reply_ip( dns_server_t *dev,
                                         dns_header_t *dns_header,
 			                            uint8_t * query,
 			                            size_t query_length);
