@@ -27,6 +27,6 @@ typedef enum {
     COLOR_IDX_MAX
 } rgb_color_sample_t;
 
-const rgb_color_t sample_color[COLOR_IDX_MAX];
+extern const rgb_color_t sample_color[];
 
 #endif

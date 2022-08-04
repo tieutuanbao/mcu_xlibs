@@ -7,6 +7,9 @@
 
 
 FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path) {
+    if(dev->fd_file > 0) {
+        fclose(dev->fd_file);
+    }
     dev->fd_file = fopen(file_path, "r");
     BITS_LOGD("open file wav: %s = %d\r\n", file_path, dev->fd_file);
     if(dev->fd_file > 0) {
@@ -179,6 +182,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
     dev->num_sample_reading = r_l_number;
     return audio_gen_wav_file_reading;
 }
+
 /**
  * @brief Kiểm tra file đang đọc hay không
  * 
@@ -188,6 +192,21 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
 FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev) {
     return dev->status;
 }
+
+/**
+ * @brief Kiểm tra file đang đọc hay không
+ * 
+ * @param dev địa chỉ lưu đối tượng đọc file
+ * @return audio_gen_wav_stt_t 
+ */
+FUNC_ON_FLASH void audio_gen_wav_stop(audio_gen_wav_t *dev) {
+    if(dev->fd_file > 0) {
+        fclose(dev->fd_file);
+        dev->fd_file = -1;
+    }
+    dev->status = audio_gen_wav_stopped;
+}
+
 
 /**
  * @brief Hàm thực thi đọc file
