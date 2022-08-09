@@ -11,6 +11,7 @@ typedef struct __attribute__((packed)) {
 } rgb_color_t;
 
 typedef enum {
+	COLOR_BLACK,
 	COLOR_RED,
 	COLOR_ORANGE,
 	COLOR_YELLOW,

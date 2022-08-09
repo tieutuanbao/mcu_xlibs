@@ -11,7 +11,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char 
         fclose(dev->fd_file);
     }
     dev->fd_file = fopen(file_path, "r");
-    BITS_LOGD("open file wav: %s = %d\r\n", file_path, dev->fd_file);
+    // BITS_LOGD("open file wav: %s = %d\r\n", file_path, dev->fd_file);
     if(dev->fd_file > 0) {
         fseek(dev->fd_file, 22 ,SPIFFS_SEEK_SET);
         fread(dev->fd_file, (char *)(&dev->num_channel), 2);
@@ -38,10 +38,10 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char 
     else {
         return audio_gen_wav_file_error;
     }
-    BITS_LOGD(" - num channel: %d\r\n", dev->num_channel);
-    BITS_LOGD(" - sample rate: %d\r\n", dev->sample_rate);
-    BITS_LOGD(" - bps: %d\r\n", dev->bits_per_sample);
-    BITS_LOGD(" - data size: %d\r\n", dev->data_size);
+    // BITS_LOGD(" - num channel: %d\r\n", dev->num_channel);
+    // BITS_LOGD(" - sample rate: %d\r\n", dev->sample_rate);
+    // BITS_LOGD(" - bps: %d\r\n", dev->bits_per_sample);
+    // BITS_LOGD(" - data size: %d\r\n", dev->data_size);
     return audio_gen_wav_running;
 }
 
@@ -81,7 +81,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_
     /* Đăng ký driver */
     dev->driver = driver;
     /* Cấu hình driver */
-    dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
+    if((dev->num_channel != 0) && (dev->bits_per_sample >= 8)) dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
     dev->driver->start(dev->driver);
 }
 
@@ -103,8 +103,11 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
         remaining = favailable(dev->fd_file);
     }
 
-    if(dev->num_channel == 2) {
-        r_l_number = (remaining / 2);
+    if(dev->num_channel > 0) {
+        r_l_number = (remaining / dev->num_channel);
+    }
+    else {
+        r_l_number = dev->num_channel;
     }
     /* Giới hạn cặp sample (R+L) */
     if(r_l_number > CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) {
@@ -133,9 +136,15 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
             r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
             l_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8) + 1];
         }
+        
         /**
-         * @brief Hiện tại chưa hỗ trợ 24bit
-         * 
+         * @brief Chỉnh âm lượng 
+         */
+        r_val = (r_val * 100) / 100;
+        l_val = (l_val * 100) / 100;
+
+        /**
+         * @brief Hiện tại chưa hỗ trợ 24bit 
          */
         if(dev->bits_per_sample == 8) {
             if(dev->num_channel == 2) {
@@ -216,7 +225,7 @@ FUNC_ON_FLASH void audio_gen_wav_stop(audio_gen_wav_t *dev) {
  */
 FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
     if (dev->driver->consume(dev->driver, dev->last_sample, dev->num_sample_reading) != audio_output_ok) {
-        BITS_LOGD("Close file wav\r\n");
+        // BITS_LOGD("Close file wav\r\n");
         if(dev->fd_file > 0) {
             fclose(dev->fd_file);
         }
@@ -226,7 +235,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
     if (audio_get_next_data(dev) == audio_gen_wav_file_end) {
         dev->status = audio_gen_wav_stopped;
         // dev->driver->stop(dev->driver);
-        BITS_LOGD("Close file wav\r\n");
+        // BITS_LOGD("Close file wav\r\n");
         if(dev->fd_file > 0) {
             fclose(dev->fd_file);
             dev->fd_file = -1;
