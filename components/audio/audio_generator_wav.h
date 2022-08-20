@@ -49,10 +49,10 @@ typedef struct {
 } audio_gen_wav_t;
 
 
-audio_gen_wav_stt_t FUNC_ON_FLASH audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path);
-audio_gen_wav_stt_t FUNC_ON_FLASH audio_gen_wav_buffer(audio_gen_wav_t *dev, uint8_t *file_buf);
-audio_gen_wav_stt_t FUNC_ON_FLASH audio_gen_wav_is_running(audio_gen_wav_t *dev);
-audio_gen_wav_stt_t FUNC_ON_FLASH audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *driver);
-audio_gen_wav_stt_t FUNC_ON_FLASH audio_gen_wav_loop(audio_gen_wav_t *dev);
+audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path);
+audio_gen_wav_stt_t audio_gen_wav_buffer(audio_gen_wav_t *dev, uint8_t *file_buf);
+audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev);
+audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *driver);
+audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev);
 
 #endif

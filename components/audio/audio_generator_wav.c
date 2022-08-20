@@ -6,7 +6,7 @@
 #define TAG "audio_gen_wav: "
 
 
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path) {
+audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path) {
     if(dev->fd_file > 0) {
         fclose(dev->fd_file);
     }
@@ -52,7 +52,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char 
  * @param file_buf địa chỉ lưu file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_buffer(audio_gen_wav_t *dev, uint8_t *file_buf) {
+audio_gen_wav_stt_t audio_gen_wav_buffer(audio_gen_wav_t *dev, uint8_t *file_buf) {
     dev->buf_ptr = file_buf;
     /* Lấy dữ liệu từ file */
     dev->num_channel = (*(file_buf + 23) << 8) | *(file_buf + 22);          // Vị trí number channel
@@ -77,7 +77,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_buffer(audio_gen_wav_t *dev, uin
  * @param driver Driver output cho file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *driver) {
+audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *driver) {
     /* Đăng ký driver */
     dev->driver = driver;
     /* Cấu hình driver */
@@ -91,7 +91,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_
  * @param dev địa chỉ lưu đối tượng đọc file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
+audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
     int16_t channel[2] = {0, 0};
     uint32_t r_l_number = 0;
     /* Tính số byte còn lại (Bytes chưa đọc) */
@@ -198,7 +198,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
  * @param dev địa chỉ lưu đối tượng đọc file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev) {
+audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev) {
     return dev->status;
 }
 
@@ -208,7 +208,7 @@ FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_is_running(audio_gen_wav_t *dev)
  * @param dev địa chỉ lưu đối tượng đọc file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH void audio_gen_wav_stop(audio_gen_wav_t *dev) {
+void audio_gen_wav_stop(audio_gen_wav_t *dev) {
     if(dev->fd_file > 0) {
         fclose(dev->fd_file);
         dev->fd_file = -1;
@@ -223,7 +223,7 @@ FUNC_ON_FLASH void audio_gen_wav_stop(audio_gen_wav_t *dev) {
  * @param dev địa chỉ lưu đối tượng đọc file
  * @return audio_gen_wav_stt_t 
  */
-FUNC_ON_FLASH audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
+audio_gen_wav_stt_t audio_gen_wav_loop(audio_gen_wav_t *dev) {
     if (dev->driver->consume(dev->driver, dev->last_sample, dev->num_sample_reading) != audio_output_ok) {
         // BITS_LOGD("Close file wav\r\n");
         if(dev->fd_file > 0) {

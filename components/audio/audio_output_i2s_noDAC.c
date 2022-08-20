@@ -7,7 +7,7 @@
  * @param dev 
  * @return audio_output_stt_t 
  */
-audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
+audio_output_stt_t i2s_no_dac_init(i2s_no_dac_t *dev) {
     dev->last_sample = 0;
     dev->cum_error = 0;
     dev->this.config = (driver_config_t)i2s_no_dac_config;
@@ -24,9 +24,9 @@ audio_output_stt_t FUNC_ON_FLASH i2s_no_dac_init(i2s_no_dac_t *dev) {
  * @param num_channel 
  * @param sample_rate 
  * @param bit_per_sample 
- * @return FUNC_ON_FLASH 
+ * @return 
  */
-FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uint32_t sample_rate, uint8_t bit_per_sample) {
+audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uint32_t sample_rate, uint8_t bit_per_sample) {
     dev->i2s_config = (i2s_config_t){
         .mode = I2S_MODE_MASTER | I2S_MODE_TX,
         .sample_rate = sample_rate,
@@ -53,14 +53,14 @@ void i2s_no_dac_stop(i2s_no_dac_t *dev){
     i2s_dma_stop(0);
 }
 
-FUNC_ON_FLASH int16_t i2s_no_dac_amplify(int32_t s) {
+int16_t i2s_no_dac_amplify(int32_t s) {
     int32_t v = (s * 64) >> 6;
     if (v < -32767) return -32767;
     else if (v > 32767) return 32767;
     else return (int16_t)(v & 0xffff);
 }
 
-FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uint32_t *delta_buff, uint16_t num_sample) {
+void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uint32_t *delta_buff, uint16_t num_sample) {
     int32_t sum;
     int32_t new_sample;
     int32_t diffPerStep;
@@ -93,7 +93,7 @@ FUNC_ON_FLASH void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uin
     }
 }
 
-FUNC_ON_FLASH void i2s_make_sample_stereo16(i2s_no_dac_t *dev, uint16_t *sample_r,  uint16_t *sample_l){
+void i2s_make_sample_stereo16(i2s_no_dac_t *dev, uint16_t *sample_r,  uint16_t *sample_l){
     if (dev->i2s_config.channel_format >= I2S_CHANNEL_FMT_ONLY_RIGHT){
         sample_r[0] = sample_l[0];
     }
@@ -104,7 +104,7 @@ FUNC_ON_FLASH void i2s_make_sample_stereo16(i2s_no_dac_t *dev, uint16_t *sample_
 
 }
 
-FUNC_ON_FLASH audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, int16_t *sample, uint16_t num_sample) {
+audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, int16_t *sample, uint16_t num_sample) {
     uint32_t delta_buff[num_sample];
     int16_t temp_sample[num_sample * 2];
 
