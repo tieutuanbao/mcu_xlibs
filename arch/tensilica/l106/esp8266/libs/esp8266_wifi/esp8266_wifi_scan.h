@@ -18,11 +18,11 @@ typedef struct {
 
 extern esp8266_wifi_scan_t esp8266_scanner;
 
-FUNC_ON_FLASH int8_t esp8266_wifi_scan(bool async, char *ssid, uint8_t channel, bool show_hidden);
-FUNC_ON_FLASH uint8_t esp8266_wifi_result_count(void);
-FUNC_ON_FLASH struct bss_info *esp8266_wifi_get_result(uint8_t idx_result);
-FUNC_ON_FLASH int8_t esp8266_wifi_complete();
-FUNC_ON_FLASH void esp8266_wifi_scan_delete();
+int8_t esp8266_wifi_scan(bool async, char *ssid, uint8_t channel, bool show_hidden);
+uint8_t esp8266_wifi_result_count(void);
+struct bss_info *esp8266_wifi_get_result(uint8_t idx_result);
+int8_t esp8266_wifi_complete();
+void esp8266_wifi_scan_delete();
 
 
 #endif

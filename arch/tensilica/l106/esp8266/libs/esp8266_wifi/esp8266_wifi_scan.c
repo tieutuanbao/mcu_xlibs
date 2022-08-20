@@ -7,13 +7,13 @@ esp8266_wifi_scan_t esp8266_scanner;
  * @brief Prototype
  * 
  */
-void FUNC_ON_FLASH esp8266_wifi_scan_done(void* result, STATUS status);
+void esp8266_wifi_scan_done(void* result, STATUS status);
 
 /**
  * @brief Code
  * 
  */
-void FUNC_ON_FLASH esp8266_wifi_scan_delete() {
+void esp8266_wifi_scan_delete() {
     if(esp8266_scanner.scan_result) {
         free(esp8266_scanner.scan_result);
         esp8266_scanner.scan_result = 0;
@@ -22,7 +22,7 @@ void FUNC_ON_FLASH esp8266_wifi_scan_delete() {
     esp8266_scanner.scan_complete = false;
 }
 
-int8_t FUNC_ON_FLASH esp8266_wifi_scan(bool async, char *ssid, uint8_t channel, bool show_hidden) {
+int8_t esp8266_wifi_scan(bool async, char *ssid, uint8_t channel, bool show_hidden) {
     /* Kiểm tra có đang scan không */
     if(esp8266_scanner.scan_started == true) {
         return WIFI_SCAN_RUNNING;
@@ -65,7 +65,7 @@ int8_t FUNC_ON_FLASH esp8266_wifi_scan(bool async, char *ssid, uint8_t channel, 
  * @return int8_t WIFI_SCAN_FAILED
  * @return int8_t Số lượng kết quả scan được
  */
-int8_t FUNC_ON_FLASH esp8266_wifi_complete() {
+int8_t esp8266_wifi_complete() {
     if(esp8266_scanner.scan_started) {
         return WIFI_SCAN_RUNNING;
     }
@@ -79,7 +79,7 @@ int8_t FUNC_ON_FLASH esp8266_wifi_complete() {
  * 
  * @return uint8_t Số lượng kết quả sau scan
  */
-uint8_t FUNC_ON_FLASH esp8266_wifi_result_count(void) {
+uint8_t esp8266_wifi_result_count(void) {
     return esp8266_scanner.scan_count;
 }
 
@@ -89,11 +89,11 @@ uint8_t FUNC_ON_FLASH esp8266_wifi_result_count(void) {
  * @param idx_result vị trí lấy kết quả
  * @return struct bss_info* con trỏ đến kết quả
  */
-struct bss_info *FUNC_ON_FLASH esp8266_wifi_get_result(uint8_t idx_result) {
+struct bss_info *esp8266_wifi_get_result(uint8_t idx_result) {
     return esp8266_scanner.scan_result + idx_result;
 }
 
-void FUNC_ON_FLASH esp8266_print_result() {
+void esp8266_print_result() {
     for(uint8_t idx_result = 0; idx_result < esp8266_scanner.scan_count;idx_result++){
         BITS_LOGD("%s: esp8266_print_result(): - result[%d].ssid = %s\r\n", __FILE__, idx_result, esp8266_scanner.scan_result[idx_result].ssid);
         BITS_LOGD("%s: esp8266_print_result():     + channel = %d\r\n", __FILE__, esp8266_scanner.scan_result[idx_result].channel);
@@ -107,7 +107,7 @@ void FUNC_ON_FLASH esp8266_print_result() {
  * @param result Kết quả scan
  * @param status Trạng thái scan
  */
-void FUNC_ON_FLASH esp8266_wifi_scan_done(void *result, STATUS status) {
+void esp8266_wifi_scan_done(void *result, STATUS status) {
     if(status != OK) {
         BITS_LOGE("%s: esp8266_wifi_scan_done(): status FAIL!\r\n", __FILE__);
         esp8266_scanner.scan_count = 0;
