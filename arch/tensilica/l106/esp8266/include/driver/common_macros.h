@@ -2,9 +2,9 @@
 #define __PORT_H
 
 #include "osapi.h"
-#include "mem.h"
 #include "ets_sys.h"
 #include "bits_string.h"
+#include "mem.h"
 
 /* Define debug logger */
 #define ANSI_COLOR_LOG      "I "
@@ -39,6 +39,10 @@
 #define ETS_SLC_INTR_DISABLE() \
     ETS_INTR_DISABLE(INT_NUM_SLC)
 
-#define tolower char_to_lower
+
+#define tolower Bits_Char_ToLower
+#define rand()  os_random()
+
+#define IRAM_FUNC           __attribute__((section(".text")))
 
 #endif

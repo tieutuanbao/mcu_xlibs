@@ -11,8 +11,8 @@
 #ifndef __DNS_SERVER_H
 #define __DNS_SERVER_H
 
+#include "c_types.h"
 #include "port_macros.h"
-#include <c_types.h>
 #include "lwip/ip_addr.h"
 #include "lwipopts.h"
 #include "lwip/def.h"
