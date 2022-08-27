@@ -28,3 +28,14 @@ long int Bits_String_ToLongInt(char *str) {
     }
     return ret;
 }
+
+char *Bits_String_FindString(const char *str, size_t str_len, const char *str_find, size_t str_find_len) {
+    size_t max_find = 0;
+    if((str_len < str_find_len) || (str_len == 0) || (str_find_len == 0)) return 0;
+    max_find = str_len - str_find_len;
+    for(size_t idx_char = 0; idx_char <= max_find; idx_char++) {
+        if(memcmp(str + idx_char, str_find, str_find) == 0) {
+            return (char *)(str + idx_char);
+        }
+    }
+}
