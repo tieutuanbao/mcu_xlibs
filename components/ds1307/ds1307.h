@@ -14,30 +14,27 @@
 #include <stdint.h>
 
 /* Địa chỉ I2C giao tiếp DS1307 */
-#define DS1307_I2C_ADDR             0xD0
+#define DS1307_I2C_ADDR         0xD0
 
 /* Danh sách thanh ghi DS1307 */
-#define DS1307_REG_SECONDS                0x00
-#define DS1307_REG_MINUTE                        0x01
-#define DS1307_REG_HOUR                            0x02
-#define DS1307_REG_DAY                            0x03
-#define DS1307_REG_DATE                            0x04
-#define DS1307_REG_MONTH                        0x05
-#define DS1307_REG_YEAR                            0x06
-#define DS1307_REG_CONTROL                    0x07
-#define DS1307_REG_RAM                            0x08
-
-#define DS1307_HOUR_AM        0
-#define DS1307_HOUR_PM        1
+#define DS1307_REG_SECONDS      0x00
+#define DS1307_REG_MINUTE       0x01
+#define DS1307_REG_HOUR         0x02
+#define DS1307_REG_DAY          0x03
+#define DS1307_REG_DATE         0x04
+#define DS1307_REG_MONTH        0x05
+#define DS1307_REG_YEAR         0x06
+#define DS1307_REG_CONTROL      0x07
+#define DS1307_REG_RAM          0x08
 
 typedef enum {
-    ds1307_hour_am,
-    ds1307_hour_pm
+    ds1307_hour_am  = 0,
+    ds1307_hour_pm  = 1
 } ds1307_hour_aop_t;
 
 typedef enum {
-    ds1307_time_format_24h,
-    ds1307_time_format_12h
+    ds1307_time_format_24h  = 0,
+    ds1307_time_format_12h  = 1
 } ds1307_time_format_t;
 
 typedef struct {
