@@ -16,7 +16,7 @@
 #include "lwip/ip_addr.h"
 #include "lwipopts.h"
 #include "lwip/def.h"
-#include "espconn.h"
+#include "udp.h"
 
 typedef struct __attribute__((packed)) __dns_header_t{
 	uint16_t id;
@@ -63,7 +63,7 @@ typedef enum {
 } dns_reply_code_t;
 
 typedef struct {
-    esp_udp espudp; 
+    struct udp_pcb espudp; 
     ip_addr_t resolve_ip;
     char *domain_name;
 } dns_server_param_t;
