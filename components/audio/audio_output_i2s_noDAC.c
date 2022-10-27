@@ -31,7 +31,7 @@ audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uin
         .mode = I2S_MODE_MASTER | I2S_MODE_TX,
         .sample_rate = sample_rate,
         .bits_per_sample = bit_per_sample,
-        .channel_format = (num_channel == 2)? I2S_CHANNEL_FMT_RIGHT_LEFT : I2S_CHANNEL_FMT_ONLY_RIGHT,
+        .channel_format = (num_channel == 2)? I2S_CHANNEL_FMT_RIGHT_LEFT : I2S_CHANNEL_FMT_ALL_RIGHT,
         .communication_format = I2S_COMM_FORMAT_I2S,
         .dma_buf_count = 2,
         .dma_buf_len = 8
@@ -66,12 +66,12 @@ void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uint32_t *delta_b
     int32_t diffPerStep;
     uint32_t bits = 0;
     for(uint16_t index_sample = 0; index_sample < num_sample; index_sample++) {
-        // BITS_LOG("Sample %d: %d -- %d, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
+        // BITS_LOG("Sample %d: %08X -- %08X, ", dev->index_sample, sample[index_sample * 2], sample[index_sample * 2 + 1]);
         /* Tính trung bình 2 giá trị LR */
         sum = (((int32_t)sample[index_sample * 2]) + ((int32_t)sample[index_sample * 2 + 1])) >> 1;
-        // printf("sum: %x ; ", sum);
+        // printf("sum: %08X ; ", sum);
         new_sample = ( (int32_t)i2s_no_dac_amplify(sum) ) << 8;
-        // printf("New samp: %x, ", new_sample);
+        // printf("new %08X, ", new_sample);
         // How much the comparison signal changes each oversample step
         diffPerStep = (new_sample - dev->last_sample) >> 5;
         // Don't need last_sample anymore, store this one for next round
@@ -90,6 +90,7 @@ void i2s_no_dac_deltasigma(i2s_no_dac_t *dev, int16_t *sample, uint32_t *delta_b
         }
         delta_buff[index_sample] = bits;
         // printf("dsbuff: %x\n", delta_buff[index_sample]);
+        dev->index_sample++;
     }
 }
 

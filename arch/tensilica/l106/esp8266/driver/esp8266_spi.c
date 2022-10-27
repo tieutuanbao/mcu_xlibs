@@ -39,12 +39,12 @@
 static bool _minimal_pins[2] = {false, false};
 
 flashchip_t sys_flashchip = {
-    0x001640ef,      // device_id
-    4 * 1024 * 1024, // chip_size
-    65536,           // block_size
-    4096,            // sector_size
-    256,             // page_size
-    0x0000ffff,      // status_mask
+    .device_id = 0x001640ef,        // device_id
+    .chip_size = 4 * 1024 * 1024,   // chip_size
+    .block_size = 65536,            // block_size
+    .sector_size = 4096,            // sector_size
+    .page_size = 256,               // page_size
+    .status_mask = 0x0000ffff       // status_mask
 };
 
 /**
@@ -285,13 +285,6 @@ __attribute__((section(".text"))) static bool spi_write_page(flashchip_t *flashc
  * @return false 
  */
 __attribute__((section(".text"))) bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
-    uint32_t first_page_portion;
-    uint32_t pos;
-    uint32_t full_pages;
-    uint32_t bytes_remaining;
-
-    bool result = true;
-
     if (buf) {
         /**
          * @brief Vô hiệu hóa các ngắt 
@@ -302,44 +295,48 @@ __attribute__((section(".text"))) bool spi_write_align_byte(uint32_t addr, uint8
          * @brief Bắt đầu ghi
          */
         if (sys_flashchip.chip_size < (addr + size)) {
-                result = false;
-                goto spi_write_byte_err;
+            Cache_Read_Enable(0, 0, 1);
+            ETS_INTR_UNLOCK();
+            return false;
         }
         uint32_t write_bytes_to_page = sys_flashchip.page_size - (addr % sys_flashchip.page_size);  // TODO: place for optimization
         if (size < write_bytes_to_page) {
             if (!spi_write_page(&sys_flashchip, addr, buf, size)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
         }
         else {
             if (!spi_write_page(&sys_flashchip, addr, buf, write_bytes_to_page)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
 
             uint32_t offset = write_bytes_to_page;
             uint32_t pages_to_write = (size - offset) / sys_flashchip.page_size;
             for (uint32_t i = 0; i < pages_to_write; i++) {
-                if (!spi_write_page(&sys_flashchip, addr + offset,
-                            buf + offset, sys_flashchip.page_size)) {
-                    result = false;
-                    goto spi_write_byte_err;
+                if (!spi_write_page(&sys_flashchip, addr + offset, buf + offset, sys_flashchip.page_size)) {
+                    Cache_Read_Enable(0, 0, 1);
+                    ETS_INTR_UNLOCK();
+                    return false;
                 }
                 offset += sys_flashchip.page_size;
             }
 
             if (!spi_write_page(&sys_flashchip, addr + offset,
                         buf + offset, size - offset)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
         }
-spi_write_byte_err:
+        while(!spi_is_ready());
         Cache_Read_Enable(0, 0, 1);
         ETS_INTR_UNLOCK();
     }
-    return result;
+    return true;
 }
 
 __attribute__((section(".text"))) static inline void read_block(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size){

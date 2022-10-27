@@ -16,6 +16,7 @@ typedef struct{
     uint8_t oversample;
     uint16_t hertz;
     size_t byte_written;
+    uint32_t index_sample;
 } i2s_no_dac_t;
 
 audio_output_stt_t i2s_no_dac_init(i2s_no_dac_t *dev);

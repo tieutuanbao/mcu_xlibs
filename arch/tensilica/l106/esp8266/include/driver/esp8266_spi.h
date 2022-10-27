@@ -357,6 +357,7 @@ typedef struct
 
 extern void Cache_Read_Disable(void);
 extern void Cache_Read_Enable(uint32, uint32, uint32);
+extern int Wait_SPI_Idle(flashchip_t *chip);
 
 #define SPI_FLASH_SEC_SIZE      4096
 

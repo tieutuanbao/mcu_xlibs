@@ -120,10 +120,10 @@ void i2s_dma_stop(i2s_port_t i2s_num) {
  * @return void 
  */
 __attribute__((section(".text"))) void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
-    uint32_t timeout_queue = 100000;
+    uint32_t timeout_queue = 10000000;
     while(timeout_queue--) {
         if(i2s_dma.dma_queue.queue_len > 0) {
-            timeout_queue = 100000;
+            timeout_queue = 10000000;
             while((frames_len > 0) && (timeout_queue--)){
                 if((i2s_dma.curr_buf_pos == DMA_BUFFER_SIZE) || (i2s_dma.curr_buf == 0)){
                     /* Disable DMA interrupt */

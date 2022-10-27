@@ -92,7 +92,6 @@ audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *
  * @return audio_gen_wav_stt_t 
  */
 audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
-    int16_t channel[2] = {0, 0};
     uint32_t r_l_number = 0;
     /* Tính số byte còn lại (Bytes chưa đọc) */
     uint32_t remaining = 0;
@@ -118,74 +117,42 @@ audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
     }
 
 
-    char *__wav_buf = (char *)malloc((r_l_number  + 1 ) * 2);
-    fread(dev->fd_file, __wav_buf, r_l_number * 2);
+    char *__wav_buf = (char *)malloc(r_l_number * dev->num_channel);
+    fread(dev->fd_file, __wav_buf, r_l_number * dev->num_channel);
 
     // BITS_LOG("Sample can read: %d - %d\r\n", remaining, r_l_number);
     /* Lấy data sample từ buffer */
     for(uint16_t idx_RL = 0; idx_RL < r_l_number; idx_RL++) {
-        char r_val = 0;
-        char l_val = 0;
+        uint16_t r_val = 0;
+        uint16_t l_val = 0;
         if(dev->buf_ptr) {
-            r_val = dev->buf_pos[0];
-            l_val = dev->buf_pos[1];
+            if((dev->num_channel == 1) && (dev->bits_per_sample == 8)) {
+                r_val = dev->buf_pos[0];
+                l_val = r_val;
+            }
+            else if((dev->num_channel == 2) && (dev->bits_per_sample == 8)) {
+                r_val = dev->buf_pos[0];
+                l_val = dev->buf_pos[1];
+            }
             /* Tăng con trỏ dữ liệu */
             dev->buf_pos += ((dev->bits_per_sample * dev->num_channel) / 8);
         }
         else {
-            r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
-            l_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8) + 1];
+            if((dev->num_channel == 1) && (dev->bits_per_sample == 8)) {
+                r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
+                l_val = r_val;
+            }
+            else if((dev->num_channel == 2) && (dev->bits_per_sample == 8)) {
+                r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
+                l_val = __wav_buf[(idx_RL + 1) * ((dev->bits_per_sample * dev->num_channel) / 8)];
+            }
         }
-        
-        /**
-         * @brief Chỉnh âm lượng 
-         */
-        r_val = (r_val * 100) / 100;
-        l_val = (l_val * 100) / 100;
 
-        /**
-         * @brief Hiện tại chưa hỗ trợ 24bit 
-         */
-        if(dev->bits_per_sample == 8) {
-            if(dev->num_channel == 2) {
-                channel[0] = r_val;
-                channel[1] = l_val;
-            }
-            else if(dev->num_channel == 1) {
-                channel[0] = r_val;
-                channel[1] = r_val;
-            }
-        } else if(dev->bits_per_sample == 16) {
-            if(dev->num_channel == 2) {
-                channel[0] = r_val;
-                channel[0] <<= 8;
-                channel[0] |= l_val;
-
-                channel[1] = r_val;
-                channel[1] <<= 8;
-                channel[1] |= l_val;
-            }
-            else if(dev->num_channel == 1) {
-                channel[0] = r_val;
-                channel[0] <<= 8;
-                channel[0] |= l_val;
-
-                channel[1] = r_val;
-                channel[1] <<= 8;
-                channel[1] |= l_val;
-            }
-        } else if(dev->bits_per_sample == 24){
-            channel[0] = ((int16_t)(r_val));
-            channel[1] = ((int16_t)(l_val));
-        } else {
-            channel[0] = 0;
-            channel[1] = 0;
-        }
-        // BITS_LOG("Sample : %d - %d\r\n", channel[0], channel[1]);
+        // BITS_LOG("Sample : %d - %d\r\n", r_val, l_val);
         /* Get left data */
-        dev->last_sample[idx_RL * 2] = channel[0];
+        dev->last_sample[idx_RL * 2] = r_val;
         /* Get right data */
-        dev->last_sample[idx_RL * 2 + 1] = channel[1];
+        dev->last_sample[idx_RL * 2 + 1] = l_val;
     }
     free(__wav_buf);
     dev->num_sample_reading = r_l_number;
