@@ -38,6 +38,9 @@ audio_gen_wav_stt_t audio_gen_wav_file(audio_gen_wav_t *dev, char *file_path) {
     else {
         return audio_gen_wav_file_error;
     }
+    if(dev->driver) {
+        dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
+    }
     // BITS_LOGD(" - num channel: %d\r\n", dev->num_channel);
     // BITS_LOGD(" - sample rate: %d\r\n", dev->sample_rate);
     // BITS_LOGD(" - bps: %d\r\n", dev->bits_per_sample);
@@ -81,7 +84,7 @@ audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *
     /* Đăng ký driver */
     dev->driver = driver;
     /* Cấu hình driver */
-    if((dev->num_channel != 0) && (dev->bits_per_sample >= 8)) dev->driver->config(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
+    if((dev->num_channel != 0) && (dev->bits_per_sample >= 8)) dev->driver->init(dev->driver, dev->num_channel, dev->sample_rate, dev->bits_per_sample);
     dev->driver->start(dev->driver);
 }
 
@@ -92,70 +95,83 @@ audio_gen_wav_stt_t audio_gen_wav_regist_drv_output(audio_gen_wav_t *dev, void *
  * @return audio_gen_wav_stt_t 
  */
 audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
-    uint32_t r_l_number = 0;
+    uint32_t Couple_RL_Count = 0;
     /* Tính số byte còn lại (Bytes chưa đọc) */
-    uint32_t remaining = 0;
-    if(dev->buf_ptr) {
-        remaining = ((dev->buf_ptr + 44) + dev->data_size) - dev->buf_pos;
-    }
-    else if(dev->fd_file > 0) {
-        remaining = favailable(dev->fd_file);
-    }
-
-    if(dev->num_channel > 0) {
-        r_l_number = (remaining / dev->num_channel);
+    uint32_t ByteRemaining = 0;
+    if(dev->fd_file > 0) {
+        ByteRemaining = favailable(dev->fd_file);
     }
     else {
-        r_l_number = dev->num_channel;
+        ByteRemaining = ((dev->buf_ptr + 44) + dev->data_size) - dev->buf_pos;
+    }
+    if(dev->num_channel > 0) {
+        Couple_RL_Count = (ByteRemaining / ((dev->bits_per_sample >> 3) * dev->num_channel));
+    }
+    else {
+        Couple_RL_Count = dev->num_channel;
     }
     /* Giới hạn cặp sample (R+L) */
-    if(r_l_number > CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) {
-        r_l_number = CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ;
+    if(Couple_RL_Count > CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ) {
+        Couple_RL_Count = CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ;
     }
-    else if(r_l_number == 0) {
+    else if(Couple_RL_Count == 0) {
         return audio_gen_wav_file_end;
     }
+    /* Lấy dữ liệu FD file */
+    if(dev->fd_file > 0) {
+        dev->buf_ptr = (char *)malloc(Couple_RL_Count * dev->num_channel * (dev->bits_per_sample >> 3));
+        fread(dev->fd_file, dev->buf_ptr, Couple_RL_Count * dev->num_channel * (dev->bits_per_sample >> 3));
+    }
+    if(dev->buf_ptr == 0) return audio_gen_wav_file_reading;
 
-
-    char *__wav_buf = (char *)malloc(r_l_number * dev->num_channel);
-    fread(dev->fd_file, __wav_buf, r_l_number * dev->num_channel);
-
-    // BITS_LOG("Sample can read: %d - %d\r\n", remaining, r_l_number);
+    // BITS_LOG("Sample can read: %d - %d\r\n", ByteRemaining, Couple_RL_Count);
     /* Lấy data sample từ buffer */
-    for(uint16_t idx_RL = 0; idx_RL < r_l_number; idx_RL++) {
-        uint16_t r_val = 0;
-        uint16_t l_val = 0;
-        if(dev->buf_ptr) {
-            if((dev->num_channel == 1) && (dev->bits_per_sample == 8)) {
-                r_val = dev->buf_pos[0];
-                l_val = r_val;
-            }
-            else if((dev->num_channel == 2) && (dev->bits_per_sample == 8)) {
-                r_val = dev->buf_pos[0];
-                l_val = dev->buf_pos[1];
-            }
-            /* Tăng con trỏ dữ liệu */
-            dev->buf_pos += ((dev->bits_per_sample * dev->num_channel) / 8);
+    uint8_t *posReadData_p = dev->buf_ptr;
+    for(uint16_t idx_RL = 0; idx_RL < Couple_RL_Count; idx_RL++) {
+        int32_t r_val = 0;
+        int32_t l_val = 0;
+        if(dev->bits_per_sample == 8) {         // Unsigned 8bit PCM
+            r_val = (posReadData_p[0] - 128) << 8;
+            l_val = (posReadData_p[dev->num_channel >> 1] - 128) << 8;
         }
-        else {
-            if((dev->num_channel == 1) && (dev->bits_per_sample == 8)) {
-                r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
-                l_val = r_val;
-            }
-            else if((dev->num_channel == 2) && (dev->bits_per_sample == 8)) {
-                r_val = __wav_buf[idx_RL * ((dev->bits_per_sample * dev->num_channel) / 8)];
-                l_val = __wav_buf[(idx_RL + 1) * ((dev->bits_per_sample * dev->num_channel) / 8)];
-            }
+        else if(dev->bits_per_sample == 16) {   // Signed 16Bit PCM
+            r_val = posReadData_p[1];
+            r_val <<= 8;
+            r_val |= posReadData_p[0];
+            r_val = (int32_t)((int16_t)r_val);
+            l_val = posReadData_p[(dev->num_channel >> 1) + 1];
+            l_val <<= 8;
+            l_val |= posReadData_p[(dev->num_channel >> 1)];
+            l_val = (int32_t)((int16_t)l_val);
         }
-
+        else if(dev->bits_per_sample == 32) {   // Signed 32Bit PCM
+            r_val = posReadData_p[3];
+            r_val <<= 8;
+            r_val |= posReadData_p[2];
+            r_val <<= 8;
+            r_val |= posReadData_p[1];
+            r_val <<= 8;
+            r_val |= posReadData_p[0];
+            l_val = posReadData_p[(dev->num_channel >> 1) + 3];
+            l_val <<= 8;
+            l_val |= posReadData_p[(dev->num_channel >> 1) + 2];
+            l_val <<= 8;
+            l_val |= posReadData_p[(dev->num_channel >> 1) + 1];
+            l_val <<= 8;
+            l_val |= posReadData_p[(dev->num_channel >> 1)];
+        }
+        /* Tăng con trỏ dữ liệu */
+        posReadData_p += (dev->bits_per_sample >> 3) * dev->num_channel;
         // BITS_LOG("Sample : %d - %d\r\n", r_val, l_val);
         /* Get left data */
-        dev->last_sample[idx_RL * 2] = r_val;
+        dev->last_sample[idx_RL * 2] = (r_val * 2);
         /* Get right data */
-        dev->last_sample[idx_RL * 2 + 1] = l_val;
+        dev->last_sample[idx_RL * 2 + 1] = (l_val * 2);
     }
-    free(__wav_buf);
-    dev->num_sample_reading = r_l_number;
+    if(dev->fd_file > 0) {
+        free(dev->buf_ptr);
+    }
+    dev->num_sample_reading = Couple_RL_Count;
     return audio_gen_wav_file_reading;
 }
 

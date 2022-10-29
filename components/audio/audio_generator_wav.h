@@ -37,10 +37,10 @@ typedef struct {
     audio_gen_wav_stt_t status;
     
     /**
-     * @brief Mảng tạm lưu sample, mỗi phần tử tương ứng 1 kênh, tối đa 16 phần tử, tương ứng với tối đa 8 sample
+     * @brief Mảng tạm lưu sample, mỗi phần tử tương ứng 1 kênh
      * 
      */
-    int16_t last_sample[CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ * 2];
+    int32_t last_sample[CONFIG_AUDIO_GEN_WAV_MAX_SAMPLE_READ * 2];
     /**
      * @brief Driver output cho wav
      * 

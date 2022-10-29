@@ -19,11 +19,5 @@ typedef struct{
     uint32_t index_sample;
 } i2s_no_dac_t;
 
-audio_output_stt_t i2s_no_dac_init(i2s_no_dac_t *dev);
-audio_output_stt_t i2s_no_dac_config(i2s_no_dac_t *dev, uint8_t num_channel, uint32_t sample_rate, uint8_t bit_per_sample);
-void i2s_no_dac_start(i2s_no_dac_t *dev);
-void i2s_no_dac_stop(i2s_no_dac_t *dev);
-int16_t i2s_no_dac_amplify(int32_t s);
-audio_output_stt_t i2s_no_dac_consume_sample(i2s_no_dac_t *dev, int16_t *sample, uint16_t num_sample);
 
 #endif
