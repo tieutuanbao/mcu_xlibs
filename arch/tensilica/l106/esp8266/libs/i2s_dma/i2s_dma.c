@@ -40,7 +40,7 @@ struct {
  * 
  * @return void 
  */
-ICACHE_FLASH_ATTR void init_descriptors_list() {
+void init_descriptors_list() {
     memset((void *)i2s_dma.dma_buffer, 0, sizeof(i2s_dma.dma_buffer));
     for (int i = 0; i < DMA_QUEUE_SIZE; i++) {
         i2s_dma.dma_block_list[i].owner = 1;
@@ -58,7 +58,7 @@ ICACHE_FLASH_ATTR void init_descriptors_list() {
     }
 }
 
-void dma_isr_handler(void *args) {
+__attribute__((section(".text"))) void dma_isr_handler(void *args) {
     /* Disable DMA interrupt */
     disable_interrupts(INT_NUM_SLC);
     bool slc_rx_eof = SLC->int_st.rx_eof;
@@ -86,7 +86,7 @@ void dma_isr_handler(void *args) {
  * 
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins) {
+void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins) {
     /* Khởi tạo DMA và I2S */
     slc_init(dma_isr_handler, 0);
     i2s_init(i2s_num, i2s_config, pins);
@@ -97,7 +97,7 @@ ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config
  * 
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
+void i2s_dma_start(i2s_port_t i2s_num) {
     init_descriptors_list();
     slc_start(i2s_dma.dma_block_list);
     i2s_start(i2s_num);
@@ -108,7 +108,7 @@ ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num) {
  * 
  * @return void 
  */
-ICACHE_FLASH_ATTR void i2s_dma_stop(i2s_port_t i2s_num) {
+void i2s_dma_stop(i2s_port_t i2s_num) {
     slc_stop();
     i2s_stop(i2s_num);
 }
@@ -119,11 +119,12 @@ ICACHE_FLASH_ATTR void i2s_dma_stop(i2s_port_t i2s_num) {
  * @param frames_len độ dài frame
  * @return void 
  */
-void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
-    uint32_t timeout_queue = 1000000;
+__attribute__((section(".text"))) void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
+    uint32_t timeout_queue = 10000000;
     while(timeout_queue--) {
         if(i2s_dma.dma_queue.queue_len > 0) {
-            while(frames_len > 0){
+            timeout_queue = 10000000;
+            while((frames_len > 0) && (timeout_queue--)){
                 if((i2s_dma.curr_buf_pos == DMA_BUFFER_SIZE) || (i2s_dma.curr_buf == 0)){
                     /* Disable DMA interrupt */
                     disable_interrupts(INT_NUM_SLC);
@@ -151,6 +152,5 @@ void i2s_dma_write(int16_t *frames, uint16_t frames_len) {
             }
             return;
         }
-        // os_delay_us(1);
     }
 }

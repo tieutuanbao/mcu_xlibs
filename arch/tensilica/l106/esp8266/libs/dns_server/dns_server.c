@@ -25,9 +25,9 @@
 #define MAX_DNS_PACKETSIZE 512
 
 
-FUNC_ON_FLASH static void dns_server_udp_recv(void *arg, char *pusrdata, unsigned short length);
+static void dns_server_udp_recv(void *arg, char *pusrdata, unsigned short length);
 
-FUNC_ON_FLASH dns_server_t *dns_server_init(uint16_t port, char *domain_name, ip_addr_t resolve_ip) {
+dns_server_t *dns_server_init(uint16_t port, char *domain_name, ip_addr_t resolve_ip) {
     dns_server_t *ret;
     dns_server_param_t *dns_sv_param;
     struct ip_info ipconfig;
@@ -57,7 +57,7 @@ FUNC_ON_FLASH dns_server_t *dns_server_init(uint16_t port, char *domain_name, ip
     return ret;
 }
 
-FUNC_ON_FLASH static void dns_server_udp_recv(void *arg, char *pusrdata, unsigned short length) {
+static void dns_server_udp_recv(void *arg, char *pusrdata, unsigned short length) {
     dns_server_param_t *dns_sv_param = ((dns_server_t *)arg)->reverse;
     dns_header_t *dns_header = (dns_header_t *) pusrdata;
     uint8_t *query, *start;
@@ -153,7 +153,7 @@ FUNC_ON_FLASH static void dns_server_udp_recv(void *arg, char *pusrdata, unsigne
     return dns_server_reply_error(arg, dns_header, DNS_REPLY_NON_EXISTENT_DOMAIN, query, queryLength);
 }
 
-FUNC_ON_FLASH void dns_server_reply_error(  dns_server_t *dev,
+void dns_server_reply_error(  dns_server_t *dev,
                                             dns_header_t *dns_header,
                                             dns_reply_code_t rep_code,
                                             unsigned char *query,
@@ -192,7 +192,7 @@ FUNC_ON_FLASH void dns_server_reply_error(  dns_server_t *dev,
     free(response_buf);
 }
 
-FUNC_ON_FLASH void dns_server_reply_ip( dns_server_t *dev,
+void dns_server_reply_ip( dns_server_t *dev,
                                         dns_header_t *dns_header,
 			                            uint8_t * query,
 			                            size_t query_length)

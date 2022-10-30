@@ -39,12 +39,12 @@
 static bool _minimal_pins[2] = {false, false};
 
 flashchip_t sys_flashchip = {
-    0x001640ef,      // device_id
-    4 * 1024 * 1024, // chip_size
-    65536,           // block_size
-    4096,            // sector_size
-    256,             // page_size
-    0x0000ffff,      // status_mask
+    .device_id = 0x001640ef,        // device_id
+    .chip_size = 4 * 1024 * 1024,   // chip_size
+    .block_size = 65536,            // block_size
+    .sector_size = 4096,            // sector_size
+    .page_size = 256,               // page_size
+    .status_mask = 0x0000ffff       // status_mask
 };
 
 /**
@@ -200,12 +200,12 @@ ICACHE_FLASH_ATTR void spi_set_frequency_div(uint8_t bus, uint32_t divider) {
     }
 }
 
-inline static void spi_wait_ready(void) {
+__attribute__((section(".text"))) inline static void spi_wait_ready(void) {
     /* Wait for SPI state machine ready */
     while(SPI(0)->ext2 & 0x07);
 }
 
-static bool spi_is_ready(void) {
+__attribute__((section(".text"))) static bool spi_is_ready(void) {
     spi_wait_ready();
     SPI(0)->rd_status.val = 0;
     /* Issue read status command */
@@ -215,13 +215,13 @@ static bool spi_is_ready(void) {
     return (status_value & 0x01) == 0;
 }
 
-static void spi_write_enable(void) {
+__attribute__((section(".text"))) static void spi_write_enable(void) {
     while(!spi_is_ready());
     SPI(0)->cmd.flash_wren = 1;
     while(SPI(0)->cmd.val != 0);
 }
 
-static inline void spi_write_data(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size)
+__attribute__((section(".text"))) static inline void spi_write_data(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size)
 {
     uint32_t words = size >> 2;
     if (size & 0b11) {
@@ -237,7 +237,7 @@ static inline void spi_write_data(flashchip_t *chip, uint32_t addr, uint8_t *buf
     while (SPI(0)->cmd.val);
 }
 
-void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size) {
+__attribute__((section(".text"))) void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size) {
     /**
      * @brief Vô hiệu hóa các ngắt 
      */
@@ -251,7 +251,7 @@ spi_write_byte_err:
     ETS_INTR_UNLOCK();
 }
 
-static bool spi_write_page(flashchip_t *flashchip, uint32_t dest_addr, uint8_t *buf, uint32_t size) {
+__attribute__((section(".text"))) static bool spi_write_page(flashchip_t *flashchip, uint32_t dest_addr, uint8_t *buf, uint32_t size) {
     if (flashchip->page_size < size + (dest_addr % flashchip->page_size)) {
         return false;
     }
@@ -284,14 +284,7 @@ static bool spi_write_page(flashchip_t *flashchip, uint32_t dest_addr, uint8_t *
  * @return true 
  * @return false 
  */
-bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
-    uint32_t first_page_portion;
-    uint32_t pos;
-    uint32_t full_pages;
-    uint32_t bytes_remaining;
-
-    bool result = true;
-
+__attribute__((section(".text"))) bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
     if (buf) {
         /**
          * @brief Vô hiệu hóa các ngắt 
@@ -302,47 +295,51 @@ bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
          * @brief Bắt đầu ghi
          */
         if (sys_flashchip.chip_size < (addr + size)) {
-                result = false;
-                goto spi_write_byte_err;
+            Cache_Read_Enable(0, 0, 1);
+            ETS_INTR_UNLOCK();
+            return false;
         }
         uint32_t write_bytes_to_page = sys_flashchip.page_size - (addr % sys_flashchip.page_size);  // TODO: place for optimization
         if (size < write_bytes_to_page) {
             if (!spi_write_page(&sys_flashchip, addr, buf, size)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
         }
         else {
             if (!spi_write_page(&sys_flashchip, addr, buf, write_bytes_to_page)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
 
             uint32_t offset = write_bytes_to_page;
             uint32_t pages_to_write = (size - offset) / sys_flashchip.page_size;
             for (uint32_t i = 0; i < pages_to_write; i++) {
-                if (!spi_write_page(&sys_flashchip, addr + offset,
-                            buf + offset, sys_flashchip.page_size)) {
-                    result = false;
-                    goto spi_write_byte_err;
+                if (!spi_write_page(&sys_flashchip, addr + offset, buf + offset, sys_flashchip.page_size)) {
+                    Cache_Read_Enable(0, 0, 1);
+                    ETS_INTR_UNLOCK();
+                    return false;
                 }
                 offset += sys_flashchip.page_size;
             }
 
             if (!spi_write_page(&sys_flashchip, addr + offset,
                         buf + offset, size - offset)) {
-                result = false;
-                goto spi_write_byte_err;
+                Cache_Read_Enable(0, 0, 1);
+                ETS_INTR_UNLOCK();
+                return false;
             }
         }
-spi_write_byte_err:
+        while(!spi_is_ready());
         Cache_Read_Enable(0, 0, 1);
         ETS_INTR_UNLOCK();
     }
-    return result;
+    return true;
 }
 
-static inline void read_block(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size){
+__attribute__((section(".text"))) static inline void read_block(flashchip_t *chip, uint32_t addr, uint8_t *buf, uint32_t size){
     SPI(0)->addr = (addr & 0x00FFFFFF) | (size << 24);
     SPI(0)->cmd.val = MASK_BIT(SPI_CMD_READ);
     while(SPI(0)->cmd.val) {};
@@ -358,7 +355,7 @@ static inline void read_block(flashchip_t *chip, uint32_t addr, uint8_t *buf, ui
  * @return true 
  * @return false 
  */
-bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
+__attribute__((section(".text"))) bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size) {
     bool result = true;
     if (buf) {
         /**
@@ -393,7 +390,7 @@ spi_read_byte_err:
     }
     return result;
 }
-bool spi_erase_sector(uint32_t addr) {
+__attribute__((section(".text"))) bool spi_erase_sector(uint32_t addr) {
     if ((addr + sys_flashchip.sector_size) > sys_flashchip.chip_size) {
         return false;
     }

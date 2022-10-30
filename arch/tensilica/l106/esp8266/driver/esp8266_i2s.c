@@ -149,7 +149,7 @@ ICACHE_FLASH_ATTR void i2s_config_io(i2s_port_t i2s_num, i2s_pin_config_t *pins)
     } else {
         iomux_set_function(gpio_2_iomux[14], IOMUX_GPIO14_FUNC_GPIO);
     }
-    BITS_LOGD(TAG "pin config: do=%d bck_o=%d ws_o=%d di=%d bck_i=%d ws_i=%d\r\n", pins->data_out_en, pins->bck_o_en, pins->ws_o_en, pins->data_in_en, pins->bck_i_en, pins->ws_i_en);
+    // BITS_LOGD(TAG "pin config: do=%d bck_o=%d ws_o=%d di=%d bck_i=%d ws_i=%d\r\n", pins->data_out_en, pins->bck_o_en, pins->ws_o_en, pins->data_in_en, pins->bck_i_en, pins->ws_i_en);
 }
 
 /**
@@ -252,15 +252,15 @@ ICACHE_FLASH_ATTR void i2s_set_channel(i2s_port_t i2s_num, i2s_channel_fmt_t ch_
     }
     I2S(i2s_num)->conf.bits_mod = bits;
 
+    I2S(i2s_num)->fifo_conf.tx_fifo_mod &= ~1;
+    I2S(i2s_num)->fifo_conf.rx_fifo_mod &= ~1;
     if((ch == 2)) {
-        I2S(i2s_num)->fifo_conf.tx_fifo_mod &= ~1;
-        I2S(i2s_num)->fifo_conf.rx_fifo_mod &= ~1;
         I2S(i2s_num)->conf_chan.tx_chan_mod &= ~1;
         I2S(i2s_num)->conf_chan.rx_chan_mod &= ~1;
     }
     else {
-        I2S(i2s_num)->fifo_conf.tx_fifo_mod |= 1;
-        I2S(i2s_num)->fifo_conf.rx_fifo_mod |= 1;
+        // I2S(i2s_num)->fifo_conf.tx_fifo_mod |= 1;
+        // I2S(i2s_num)->fifo_conf.rx_fifo_mod |= 1;
         I2S(i2s_num)->conf_chan.tx_chan_mod |= 1;
         I2S(i2s_num)->conf_chan.rx_chan_mod |= 1;
     }
@@ -275,7 +275,7 @@ ICACHE_FLASH_ATTR void i2s_start(i2s_port_t i2s_num) {
     I2S(i2s_num)->fifo_conf.dscr_en = 1;
     /* Start transmission */
     I2S(i2s_num)->conf.tx_start = 1;
-    BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S(i2s_num)->conf.val, I2S(i2s_num)->int_clr.val, I2S(i2s_num)->int_ena.val, I2S(i2s_num)->fifo_conf.val, I2S(i2s_num)->conf_chan.val, I2S(i2s_num)->rx_eof_num);
+    // BITS_LOGD("I2S: conf=%X int_clr=%X int_ena=%X fifo_conf=%X conf_chan=%X rx_eof_num=%X\r\n", I2S(i2s_num)->conf.val, I2S(i2s_num)->int_clr.val, I2S(i2s_num)->int_ena.val, I2S(i2s_num)->fifo_conf.val, I2S(i2s_num)->conf_chan.val, I2S(i2s_num)->rx_eof_num);
 }
 
 /**

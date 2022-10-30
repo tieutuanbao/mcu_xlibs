@@ -357,6 +357,7 @@ typedef struct
 
 extern void Cache_Read_Disable(void);
 extern void Cache_Read_Enable(uint32, uint32, uint32);
+extern int Wait_SPI_Idle(flashchip_t *chip);
 
 #define SPI_FLASH_SEC_SIZE      4096
 
@@ -389,10 +390,10 @@ extern ICACHE_FLASH_ATTR void spi_set_frequency_div(uint8_t bus, uint32_t divide
 extern ICACHE_FLASH_ATTR void spi_set_mode(uint8_t bus, spi_mode_t mode);
 extern ICACHE_FLASH_ATTR void spi_set_msb(uint8_t bus, bool msb);
 extern ICACHE_FLASH_ATTR void spi_set_endianness(uint8_t bus, spi_endianness_t endianness);
-bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
-bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
-bool spi_erase_sector(uint32_t addr);
+__attribute__((section(".text"))) bool spi_write_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+__attribute__((section(".text"))) bool spi_read_align_byte(uint32_t addr, uint8_t *buf, uint32_t size);
+__attribute__((section(".text"))) bool spi_erase_sector(uint32_t addr);
 
-void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size);
+__attribute__((section(".text"))) void test_write_page(uint32_t addr, uint8_t *buf, uint32_t size);
 
 #endif

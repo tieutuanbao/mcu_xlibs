@@ -19,10 +19,10 @@
 #define DMA_BUFFER_SIZE         128
 #define DMA_QUEUE_SIZE          4
 
-ICACHE_FLASH_ATTR void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins);
-ICACHE_FLASH_ATTR void i2s_dma_start(i2s_port_t i2s_num);
-ICACHE_FLASH_ATTR void i2s_dma_stop(i2s_port_t i2s_num);
-void i2s_dma_write(int16_t *frames, uint16_t frames_len);
+void i2s_dma_init(i2s_port_t i2s_num, i2s_config_t *i2s_config, i2s_pin_config_t *pins);
+void i2s_dma_start(i2s_port_t i2s_num);
+void i2s_dma_stop(i2s_port_t i2s_num);
+__attribute__((section(".text"))) void i2s_dma_write(int16_t *frames, uint16_t frames_len);
 
 
 #endif /* __I2S_DMA_H */
