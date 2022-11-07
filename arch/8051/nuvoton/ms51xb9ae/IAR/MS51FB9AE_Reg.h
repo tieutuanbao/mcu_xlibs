@@ -511,27 +511,24 @@ __sfr __no_init volatile unsigned char EIPH1       @ 0xFF;
 #define TI_1        SCON_1_bit.BIT1
 #define RI_1        SCON_1_bit.BIT0
 
-#define reset_interrupt_vector                0
-#define external_0_interrupt_vector        0x03
-#define timer_0_interrupt_vector            0x0B
-#define external_1_interrupt_vector        0x13
-#define timer_1_interrupt_vector            0x1B
-#define serial_0_interrupt_vector            0x23
-#define timer_2_interrupt_vector            0x2B
-#define i2C_interrupt_vector                    0x33
-#define pin_interrupt_vector                    0x3B
-#define brown_out_interrupt_vector        0x43
-#define spi_interrupt_vector                    0x4B
-#define wdt_interrupt_vector                    0x53
-#define adc_interrupt_vector                    0x5B
-#define ic_interrupt_vector                        0x63
-#define pwm_interrupt_vector                    0x6B
-#define fault_break_interrupt_vector    0x73
-#define serial_1_interrupt_vector            0x7B
-#define timer_3_interrupt_vector            0x83
-#define wkup_timer_interrupt_vector        0x8B
-
-#include "Function_Define.h"
-#include "SFR_Macro.h"
+#define Reset_Interrupt_Vector              0
+#define External_0_Interrupt_Vector         0x03
+#define Timer_0_Interrupt_Vector            0x0B
+#define External_1_Interrupt_Vector         0x13
+#define Timer_1_Interrupt_Vector            0x1B
+#define Serial_0_Interrupt_Vector           0x23
+#define Timer_2_Interrupt_Vector            0x2B
+#define I2C_Interrupt_Vector                0x33
+#define Pin_Interrupt_Vector                0x3B
+#define Brown_Out_Interrupt_Vector          0x43
+#define SPI_Interrupt_Vector                0x4B
+#define WDT_Interrupt_Vector                0x53
+#define ADC_Interrupt_Vector                0x5B
+#define IC_Interrupt_Vector                 0x63
+#define PWM_Interrupt_Vector                0x6B
+#define Fault_Break_Interrupt_Vector        0x73
+#define Serial_1_Interrupt_Vector           0x7B
+#define Timer_3_Interrupt_Vector            0x83
+#define WKUP_Timer_Interrupt_Vector         0x8B
 
 #endif

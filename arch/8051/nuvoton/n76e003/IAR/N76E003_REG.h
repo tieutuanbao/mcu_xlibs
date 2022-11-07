@@ -3,6 +3,10 @@ N76E003.H
 
 Header file for Nuvoton N76E003 in IAR
 --------------------------------------------------------------------------*/
+#ifndef __N76E003AT20_H__
+#define __N76E003AT20_H__
+
+
 __sfr __no_init volatile union
 {
   unsigned char P0; /* Port 0 */
@@ -591,12 +595,12 @@ __sfr __no_init volatile unsigned char EIPH1 @ 0xFF;
 #define CM_RL2      T2CON_bit.BIT0
 
 /*  I2CON  */
-#define I2CEN    I2CON_bit.BIT6
-#define STA      I2CON_bit.BIT5
-#define STO      I2CON_bit.BIT4
-#define SI       I2CON_bit.BIT3
-#define AA       I2CON_bit.BIT2
-#define I2CPX     I2CON_bit.BIT0
+#define I2CEN       I2CON_bit.BIT6
+#define STA         I2CON_bit.BIT5
+#define STO         I2CON_bit.BIT4
+#define SI          I2CON_bit.BIT3
+#define AA          I2CON_bit.BIT2
+#define I2CPX       I2CON_bit.BIT0
 
 /*  IP  */
 #define PADC        IP_bit.BIT6
@@ -608,7 +612,7 @@ __sfr __no_init volatile unsigned char EIPH1 @ 0xFF;
 #define PX0         IP_bit.BIT0
 
 /*  P3  */
-#define P30          P3_bit.BIT0
+#define P30         P3_bit.BIT0
 
 
 /*  IE  */
@@ -636,17 +640,17 @@ __sfr __no_init volatile unsigned char EIPH1 @ 0xFF;
 #define RI          SCON_bit.BIT0
 
 /*  P1  */
-#define P17       P1_bit.BIT7
-#define P16       P1_bit.BIT6
+#define P17         P1_bit.BIT7
+#define P16         P1_bit.BIT6
 #define TXD_1       P1_bit.BIT6
-#define P15       P1_bit.BIT5
-#define P14       P1_bit.BIT4
-#define SDA       P1_bit.BIT4
-#define P13       P1_bit.BIT3
-#define SCL       P1_bit.BIT3
-#define P12        P1_bit.BIT2
-#define P11        P1_bit.BIT1
-#define P10        P1_bit.BIT0
+#define P15         P1_bit.BIT5
+#define P14         P1_bit.BIT4
+#define SDA         P1_bit.BIT4
+#define P13         P1_bit.BIT3
+#define SCL         P1_bit.BIT3
+#define P12         P1_bit.BIT2
+#define P11         P1_bit.BIT1
+#define P10         P1_bit.BIT0
 
 /*  TCON  */
 #define TF1                 TCON_bit.BIT7
@@ -665,33 +669,33 @@ __sfr __no_init volatile unsigned char EIPH1 @ 0xFF;
 #define TXD                 P0_bit.BIT6
 #define P05                 P0_bit.BIT5
 #define P04                 P0_bit.BIT4
-#define STADC                     P0_bit.BIT4
+#define STADC               P0_bit.BIT4
 #define P03                 P0_bit.BIT3
 #define P02                 P0_bit.BIT2
-#define RXD_1                     P0_bit.BIT2
+#define RXD_1               P0_bit.BIT2
 #define P01                 P0_bit.BIT1
-#define MISO                     P0_bit.BIT1
+#define MISO                P0_bit.BIT1
 #define P00                 P0_bit.BIT0
-#define MOSI                     P0_bit.BIT0
+#define MOSI                P0_bit.BIT0
 
-
-
-#define Reset_Interrupt_Vector                0
-#define External_0_Interrupt_Vector        0x03
+#define Reset_Interrupt_Vector              0
+#define External_0_Interrupt_Vector         0x03
 #define Timer_0_Interrupt_Vector            0x0B
-#define External_1_Interrupt_Vector        0x13
+#define External_1_Interrupt_Vector         0x13
 #define Timer_1_Interrupt_Vector            0x1B
-#define Serial_0_Interrupt_Vector            0x23
+#define Serial_0_Interrupt_Vector           0x23
 #define Timer_2_Interrupt_Vector            0x2B
-#define I2C_Interrupt_Vector                    0x33
-#define Pin_Interrupt_Vector                    0x3B
-#define Brown_Out_Interrupt_Vector        0x43
-#define SPI_Interrupt_Vector                    0x4B
-#define WDT_Interrupt_Vector                    0x53
-#define ADC_Interrupt_Vector                    0x5B
-#define IC_Interrupt_Vector                        0x63
-#define PWM_Interrupt_Vector                    0x6B
-#define Fault_Break_Interrupt_Vector    0x73
-#define Serial_1_Interrupt_Vector            0x7B
+#define I2C_Interrupt_Vector                0x33
+#define Pin_Interrupt_Vector                0x3B
+#define Brown_Out_Interrupt_Vector          0x43
+#define SPI_Interrupt_Vector                0x4B
+#define WDT_Interrupt_Vector                0x53
+#define ADC_Interrupt_Vector                0x5B
+#define IC_Interrupt_Vector                 0x63
+#define PWM_Interrupt_Vector                0x6B
+#define Fault_Break_Interrupt_Vector        0x73
+#define Serial_1_Interrupt_Vector           0x7B
 #define Timer_3_Interrupt_Vector            0x83
-#define WKUP_Timer_Interrupt_Vector        0x8B
+#define WKUP_Timer_Interrupt_Vector         0x8B
+
+#endif
