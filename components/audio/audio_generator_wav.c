@@ -164,9 +164,9 @@ audio_gen_wav_stt_t audio_get_next_data(audio_gen_wav_t *dev) {
         posReadData_p += (dev->bits_per_sample >> 3) * dev->num_channel;
         // BITS_LOG("Sample : %d - %d\r\n", r_val, l_val);
         /* Get left data */
-        dev->last_sample[idx_RL * 2] = (r_val * 2);
+        dev->last_sample[idx_RL * 2] = r_val;
         /* Get right data */
-        dev->last_sample[idx_RL * 2 + 1] = (l_val * 2);
+        dev->last_sample[idx_RL * 2 + 1] = l_val;
     }
     if(dev->fd_file > 0) {
         free(dev->buf_ptr);
