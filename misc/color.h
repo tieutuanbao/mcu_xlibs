@@ -3,17 +3,6 @@
 
 #include <stdint.h>
 
-typedef struct __attribute__((packed)) {
-    uint8_t R;
-    uint8_t G;
-    uint8_t B;
-} Color_RGB_t;
-
-typedef struct __attribute__((packed)) {
-    Color_RGB_t RGB;
-    uint8_t A;
-} Color_ARGB_t;
-
 #define COLOR_BLACK	            SampleColor[0]
 #define COLOR_RED               SampleColor[1]
 #define COLOR_ORANGE            SampleColor[2]
@@ -28,6 +17,35 @@ typedef struct __attribute__((packed)) {
 #define COLOR_MAGENTA           SampleColor[11]
 #define COLOR_ROSE              SampleColor[12]
 #define COLOR_WHITE             SampleColor[13]
+#define COLOR_BY_ID(n)          SampleColor[n]
+
+typedef struct __attribute__((packed)) {
+    uint8_t R;
+    uint8_t G;
+    uint8_t B;
+} Color_RGB_t;
+
+typedef struct __attribute__((packed)) {
+    Color_RGB_t RGB;
+    uint8_t A;
+} Color_ARGB_t;
+
+typedef enum {
+    COLOR_BLACK_ID,
+    COLOR_RED_ID,
+    COLOR_ORANGE_ID,
+    COLOR_YELLOW_ID,
+    COLOR_CHART_GREEN_ID,
+    COLOR_GREEN_ID,
+    COLOR_SPRING_GREEN_ID,
+    COLOR_CYAN_ID,
+    COLOR_AZURE_ID,
+    COLOR_BLUE_ID,
+    COLOR_VIOLET_ID,
+    COLOR_MAGENTA_ID,
+    COLOR_ROSE_ID,
+    COLOR_WHITE_ID
+} SampleColorID_t;
 
 extern const Color_RGB_t SampleColor[];
 
