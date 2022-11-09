@@ -65,14 +65,14 @@ void EZGUI_Draw_String(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t Point
  * 
  * @param DrawPoint Driver vẽ điểm ảnh
  * @param Graphic Graphic vẽ
- * @param StartPoint Điểm bắt đầu
- * @param StopPoint Điểm kết thúc
+ * @param StartPos Điểm bắt đầu
+ * @param StopPos Điểm kết thúc
  * @param Step Bước vẽ
  * @param Color Màu vẽ
  */
-void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPoint, Point_t StopPoint, uint8_t Step, void *Color) {
-    int32_t DistanceX = StopPoint.X - StartPoint.X;
-    int32_t DistanceY = StopPoint.Y - StartPoint.Y;
+void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Point_t StopPos, uint8_t Step, void *Color) {
+    int32_t DistanceX = StopPos.X - StartPos.X;
+    int32_t DistanceY = StopPos.Y - StartPos.Y;
     if(DistanceX < 0) {
         DistanceX = -DistanceX;
     }
@@ -81,92 +81,109 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
     }
     int DistanceNearPoint = 2 * DistanceY - DistanceX;
     /* Đường thẳng dọc */
-    if(StopPoint.X == StartPoint.X) {
+    if(StopPos.X == StartPos.X) {
         /* Vẽ từ dưới lên */
-        if(StartPoint.Y > StopPoint.Y) {
-            while(StartPoint.Y > StopPoint.Y) {
-                StartPoint.Y -= Step;
-                if(StartPoint.Y < Graphic->Size.Height) {
-                    if(StartPoint.Y < 0) {
-                        StartPoint.Y = 0;
-                        DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+        if(StartPos.Y > StopPos.Y) {
+            while(StartPos.Y > StopPos.Y) {
+                StartPos.Y -= Step;
+                if(StartPos.Y < Graphic->Size.Height) {
+                    if(StartPos.Y < 0) {
+                        StartPos.Y = 0;
+                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
         /* Vẽ từ trên xuống */
-        else if(StartPoint.Y < StopPoint.Y) {
-            while(StartPoint.Y < StopPoint.Y) {
-                StartPoint.Y += Step;
-                if(StartPoint.Y >= 0) {
-                    if(StartPoint.Y > Graphic->Size.Height) {
-                        StartPoint.Y = Graphic->Size.Height;
-                        DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+        else if(StartPos.Y < StopPos.Y) {
+            while(StartPos.Y < StopPos.Y) {
+                StartPos.Y += Step;
+                if(StartPos.Y >= 0) {
+                    if(StartPos.Y > Graphic->Size.Height) {
+                        StartPos.Y = Graphic->Size.Height;
+                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
         /* Vẽ 1 điểm duy nhất */
         else {
-            DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }
     }
     /* Đường thẳng ngang */
-    else if(StopPoint.Y == StartPoint.Y) {
+    else if(StopPos.Y == StartPos.Y) {
         /* Vẽ từ phải sang trái */
-        if(StartPoint.X > StopPoint.X) {
-            while(StartPoint.X > StopPoint.X) {
-                StartPoint.X -= Step;
-                if(StartPoint.X < Graphic->Size.Width) {
-                    if(StartPoint.X < 0) {
-                        StartPoint.X = 0;
-                        DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+        if(StartPos.X > StopPos.X) {
+            while(StartPos.X > StopPos.X) {
+                StartPos.X -= Step;
+                if(StartPos.X < Graphic->Size.Width) {
+                    if(StartPos.X < 0) {
+                        StartPos.X = 0;
+                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
         /* Vẽ từ trái sang phải */
-        else if(StartPoint.X < StopPoint.X) {
-            while(StartPoint.X < StopPoint.X) {
-                StartPoint.X += Step;
-                if(StartPoint.X > Graphic->Size.Width) {
-                    StartPoint.X = Graphic->Size.Width;
+        else if(StartPos.X < StopPos.X) {
+            while(StartPos.X < StopPos.X) {
+                StartPos.X += Step;
+                if(StartPos.X > Graphic->Size.Width) {
+                    StartPos.X = Graphic->Size.Width;
                     break;
                 }
-                DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+                DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
             }
         }
         else {
-            DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }        
     }
     /* Đường thẳng chéo */
     else {
-        if(StartPoint.Y > StopPoint.Y) {
+        if(StartPos.Y > StopPos.Y) {
             Step = -Step;
         }
-        DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
-        while(StartPoint.X != StopPoint.X) {
+        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+        while(StartPos.X != StopPos.X) {
             if (DistanceNearPoint < 0) DistanceNearPoint += (2 * DistanceY);
             else {
                 DistanceNearPoint += 2 * (DistanceY - DistanceX);
-                StartPoint.Y += Step;
+                StartPos.Y += Step;
             }
-            if(StartPoint.X > StopPoint.X) StartPoint.X--;
-            else StartPoint.X++;
-            DrawPoint(Graphic, (Point_t){.X = StartPoint.X, .Y = StartPoint.Y}, Color);
+            if(StartPos.X > StopPos.X) StartPos.X--;
+            else StartPos.X++;
+            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }
     }
 }
 
-void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPoint, Size_t Size_t, uint8_t Step, void *Color) {
+void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, uint8_t Step, void *Color) {
 
 }
 
-void EZGUI_Draw_Image
+void EZGUI_Draw_Image(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, Color_ARGB_t *Buf) {
+    Point_t DrawPos = {0, 0};
+    for(int32_t IndexHeight = 0; IndexHeight < Size.Height; IndexHeight++) {
+        DrawPos.Y = StartPos.Y + IndexHeight;
+        if((DrawPos.Y >= 0) && (DrawPos.Y < Graphic->Size.Height)) {
+            for(int32_t IndexWidth = 0; IndexWidth < Size.Width; IndexWidth++) {
+                DrawPos.X = StartPos.X + IndexWidth;
+                if((DrawPos.X >= 0) && (DrawPos.X < Graphic->Size.Width)) {
+                    if(DrawPoint == EZGUI_Draw_Point_8bit) {
+                        if(((uint8_t *)Buf)[(IndexHeight >> 8) * Size.Width + IndexWidth] & (0x01 << (IndexHeight % 8))) {
+                            DrawPoint(Graphic, DrawPos, &((uint8_t *)Buf)[(IndexHeight >> 8) * Size.Width + IndexWidth]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

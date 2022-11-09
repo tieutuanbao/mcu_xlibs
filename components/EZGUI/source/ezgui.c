@@ -34,7 +34,7 @@ void EZGUI_Update(EZGUI_t *GUI) {
     Graphics_t DrawGraphic = {.Buf = GUI->Buf[0], .Size = GUI->BlockRes};
     for(uint16_t IndexVer = 0; IndexVer < GUI->FullRes.Height; IndexVer += GUI->BlockRes.Height) {
         for(uint16_t IndexHor = 0; IndexHor < GUI->FullRes.Width ; IndexHor += GUI->BlockRes.Width) {
-            memset(GUI->Buf[0], 0, GUI->BlockRes.Height * GUI->BlockRes.Width * 3);
+            memset(GUI->Buf[0], 0, (GUI->BlockRes.Height >> 3) * GUI->BlockRes.Width);
             /* Render */
             for(uint8_t IndexControl = 0; GUI->Object.Children[IndexControl] != 0; IndexControl++) {
                 GUI->Object.Children[IndexControl]->Draw(GUI->DrawPoint_Drv, GUI->Object.Children[IndexControl], &DrawGraphic, (Point_t){-IndexHor, -IndexVer});
