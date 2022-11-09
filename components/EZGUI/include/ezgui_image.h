@@ -5,9 +5,7 @@
 
 typedef struct {
     EZGUI_Objects_t Object;
-    Size_t (*GetSize_Driver)(char *FilePath);
-    void (*GetData_Driver)(char *FilePath, Color_ARGB_t *Buf, Area_t Area);
-    char *FilePath;
+    Color_ARGB_t (*Image_GetPixel)(Point_t PosPixel);
     Color_ARGB_t *Buf;
 } EZGUI_Image_t;
 

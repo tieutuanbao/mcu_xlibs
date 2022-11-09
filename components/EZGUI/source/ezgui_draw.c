@@ -169,19 +169,17 @@ void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t St
 
 }
 
-void EZGUI_Draw_Image(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, Color_ARGB_t *Buf) {
+void EZGUI_Draw_Image(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, Color_ARGB_t (*Image_GetPixel)(Point_t PosPixel)) {
     Point_t DrawPos = {0, 0};
+    Color_ARGB_t PixelColor;
     for(int32_t IndexHeight = 0; IndexHeight < Size.Height; IndexHeight++) {
         DrawPos.Y = StartPos.Y + IndexHeight;
         if((DrawPos.Y >= 0) && (DrawPos.Y < Graphic->Size.Height)) {
             for(int32_t IndexWidth = 0; IndexWidth < Size.Width; IndexWidth++) {
                 DrawPos.X = StartPos.X + IndexWidth;
                 if((DrawPos.X >= 0) && (DrawPos.X < Graphic->Size.Width)) {
-                    if(DrawPoint == EZGUI_Draw_Point_8bit) {
-                        if(((uint8_t *)Buf)[(IndexHeight >> 8) * Size.Width + IndexWidth] & (0x01 << (IndexHeight % 8))) {
-                            DrawPoint(Graphic, DrawPos, &((uint8_t *)Buf)[(IndexHeight >> 8) * Size.Width + IndexWidth]);
-                        }
-                    }
+                    PixelColor = Image_GetPixel((Point_t){.X = IndexWidth, .Y = IndexHeight});
+                    DrawPoint(Graphic, DrawPos, &PixelColor);
                 }
             }
         }
