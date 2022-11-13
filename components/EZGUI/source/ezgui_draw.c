@@ -144,7 +144,7 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
         }
         else {
             DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
-        }        
+        }
     }
     /* Đường thẳng chéo */
     else {
@@ -165,8 +165,17 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
     }
 }
 
-void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, uint8_t Step, void *Color) {
-
+void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, void *Color) {
+    Point_t StopPos = (Point_t){(int32_t)Size.Width + StartPos.X, (int32_t)Size.Height + StartPos.Y};
+    for(int32_t IndexHeight = StartPos.Y; IndexHeight < StopPos.Y; IndexHeight++) {
+        if(IndexHeight >= 0) {
+            for(int32_t IndexWidth = StartPos.X; IndexWidth < StopPos.X; IndexWidth++) {
+                if(IndexWidth >= 0) {
+                    DrawPoint(Graphic, (Point_t){IndexWidth, IndexHeight}, Color);
+                }
+            }
+        }
+    }
 }
 
 void EZGUI_Draw_Image(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, Color_ARGB_t (*Image_GetPixel)(Point_t PosPixel)) {
