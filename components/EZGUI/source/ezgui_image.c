@@ -19,7 +19,7 @@ void Image_Draw(DrawPoint_t DrawPoint_Drv, EZGUI_Image_t *Image, Graphics_t *Gra
     if(ImageAreaCanDraw.Stop.X > Image->Object.Size.Width) ImageAreaCanDraw.Stop.X = Image->Object.Size.Width - 1;
     ImageAreaCanDraw.Stop.Y = (int32_t)Graphic->Size.Height - DrawPos.Y - 1;
     if(ImageAreaCanDraw.Stop.Y > Image->Object.Size.Height) ImageAreaCanDraw.Stop.Y = Image->Object.Size.Height - 1;
-    Size_t Size_ImgCanDraw = {.Width = ((ImageAreaCanDraw.Stop.X - ImageAreaCanDraw.Start.X) + 1), .Height = ((ImageAreaCanDraw.Stop.Y - ImageAreaCanDraw.Start.Y) + 1)};
+    
     EZGUI_Draw_Image(DrawPoint_Drv, Graphic, DrawPos, Image->Object.Size, Image->Image_GetPixel);
 }
 
