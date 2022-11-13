@@ -18,8 +18,8 @@ static const uint32_t UTF8_Ref_Table[] = {
 };
 
 Font_Decode_t Font_DecodeChar(const char *str, const Font_t *Font) {
-    Font_Decode_t CharInfo = {.Char = Font->Table + (127 - Font->StartChar), .ByteCount = 1};
-    if((uint8_t)*str > (Font->StartChar + Font->Size)) {
+    Font_Decode_t CharInfo = {.Char = Font->Table, .ByteCount = 1};
+    if((uint8_t)*str > 0x7F) {
         uint32_t UTF8_Code = 0;
         if(((uint8_t)*str & 0xE8) == 0xE0) {
             UTF8_Code |= (*(str++));
@@ -47,6 +47,10 @@ Font_Decode_t Font_DecodeChar(const char *str, const Font_t *Font) {
         return CharInfo;
     }
     else{
+        if((uint8_t)*str < 32) {
+            return CharInfo;
+        }
+        CharInfo.Char = Font->Table + ((uint8_t)(*str) - Font->StartChar);
         return CharInfo;
     }
 }
