@@ -31,6 +31,7 @@ typedef struct EZGUI_Objects {
     Draw_t Draw;
     uint8_t (*ObjectEvent)(void *Sender, void *Args);
     EZGUI_Objects_States_t State;
+    bool Visible;
     Point_t Point;
     Size_t Size;
     struct EZGUI_Objects **Children;
