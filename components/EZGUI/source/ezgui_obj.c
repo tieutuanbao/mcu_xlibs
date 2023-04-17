@@ -44,13 +44,3 @@ EZGUI_Objects_t **EZGUI_Object_HasChildren(EZGUI_Objects_t *Parrent) {
 EZGUI_Objects_t *EZGUI_Object_Index(EZGUI_Objects_t *Parrent, uint8_t Index) {
     return Parrent->Children[Index];
 }
-
-// int8_t EZGUI_Object_Render(EZGUI_Objects_t *Parrent, Graphics_t *Graphic) {
-//     uint8_t TempObjectData[100];
-//     for(uint8_t IndexControl = 0; GUI->Object.Children[IndexControl] != 0; IndexControl++) {
-//         memcpy((void *)TempObjectData, (void *)GUI->Object.Children[IndexControl], GUI->Object.Children[IndexControl]->InstanceSize);
-//         ((EZGUI_Objects_t *)TempObjectData)->Point.X -= IndexHor;
-//         ((EZGUI_Objects_t *)TempObjectData)->Point.Y -= IndexVer;
-//         GUI->Object.Children[IndexControl]->Draw((EZGUI_Objects_t *)(TempObjectData), &DrawGraphic);
-//     }
-// }

@@ -1,0 +1,4 @@
+{
+    "nrf-connect.topdir": "${nrf-connect.sdk:2.2.99-dev3}",
+    "nrf-connect.toolchain.path": "d:\\2.Document\\Nordic\\nRFconnectSDK\\toolchains\\v2.2.99-dev3"
+}

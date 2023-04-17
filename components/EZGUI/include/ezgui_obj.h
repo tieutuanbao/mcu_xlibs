@@ -3,9 +3,18 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "ezgui_types.h"
 #include "color.h"
-#include "graphic.h"
-#include "ezgui_draw.h"
+
+#define EZGUI_OBJ \
+        struct EZGUI_Objects **Children; \
+        EZGUI_ObjectDraw_t Draw; \
+        Position_t Position; \
+        Size_t Size; \
+        uint8_t InstanceSize; \
+        EZGUI_Objects_States_t State; \
+        uint8_t (*ObjectEvent)(void *Sender, void *Args); \
+        bool Visible; \
 
 typedef enum {
     EZGUI_OBJ_STATE_NULL        = 0x0000,
@@ -24,17 +33,9 @@ typedef enum {
     EZGUI_OBJ_EVENT_RELEASE
 } EZGUI_Objects_Events_t;
 
-struct EZGUI_Objects;
-typedef void (*Draw_t)(DrawPoint_t DrawPoint_Drv, struct EZGUI_Objects *ThisObject, Graphics_t *Graphic, Point_t Offset);
+typedef void (*EZGUI_ObjectDraw_t)(void *ObjectDraw, EZGUI_Graphics_t *Graph, Position_t Offset, DrawPoint_Driver_t DrawPoint_Driver);
 typedef struct EZGUI_Objects {
-    uint32_t InstanceSize;
-    Draw_t Draw;
-    uint8_t (*ObjectEvent)(void *Sender, void *Args);
-    EZGUI_Objects_States_t State;
-    bool Visible;
-    Point_t Point;
-    Size_t Size;
-    struct EZGUI_Objects **Children;
+    EZGUI_OBJ
 } EZGUI_Objects_t;
 
 void EZGUI_Object_Add(EZGUI_Objects_t *parrent, EZGUI_Objects_t *children);

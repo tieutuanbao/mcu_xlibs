@@ -2,45 +2,56 @@
 #include <stdlib.h>
 #include <string.h>
 
-/**
- * @brief Tạo mới một GUI
- * 
- * @param DisplaySize Kích thước màn hình
- * @param BlockSize Kích thước khối Render
- * @param Driver Driver hiển thị
- * @return EZGUI_t* 
- */
-EZGUI_t *EZGUI_GUI_new(Size_t DisplaySize, Size_t BlockSize, Driver_t Driver, void *Buf1, void *Buf2, EZGUI_GraphicType_t GraphicType) {
-    EZGUI_t *New_GUI = malloc(sizeof(EZGUI_t));
-    New_GUI->Object.Children = 0;
-    New_GUI->FullRes = DisplaySize;
-    New_GUI->BlockRes = BlockSize;
-    New_GUI->Driver = Driver;
-    New_GUI->Buf[0] = Buf1;
-    switch(GraphicType) {
+void EZGUI_Draw(EZGUI_t *EZGUI) {
+    Position_t Offset = {0, 0};
+    Area_t Area = {0, 0};
+    for(uint16_t IndexMonitor = 0; IndexMonitor < EZGUI->Monitor.Count; IndexMonitor++) {
+        for(uint16_t Y_Render = EZGUI->Monitor.List[IndexMonitor].Offset.Y; Y_Render < EZGUI->Monitor.List[IndexMonitor].Resolution.Height; Y_Render += EZGUI->Monitor.List[IndexMonitor].Graph.Size.Height) {
+            for(uint16_t X_Render = EZGUI->Monitor.List[IndexMonitor].Offset.X; X_Render < EZGUI->Monitor.List[IndexMonitor].Resolution.Width; X_Render += EZGUI->Monitor.List[IndexMonitor].Graph.Size.Width) {
+                if(EZGUI->Children == 0) return;
+                Area.Start = (Position_t){.X = X_Render, .Y = Y_Render};
+                Area.Stop = (Position_t){.X = X_Render + EZGUI->Monitor.List[IndexMonitor].Graph.Size.Width - 1, .Y = Y_Render + EZGUI->Monitor.List[IndexMonitor].Graph.Size.Height - 1};
+                Offset = (Position_t){-Area.Start.X, -Area.Start.Y};
+                for(uint16_t IndexObj = 0; (EZGUI->Children[IndexObj] != 0); IndexObj++) {
+                    /* Render */
+                    EZGUI->Children[IndexObj]->Draw(EZGUI->Children[IndexObj], &EZGUI->Monitor.List[IndexMonitor].Graph, Offset, EZGUI->Monitor.List[IndexMonitor].DrawPoint_Driver);
+                }
+                /* Extract */
+                EZGUI->Monitor.List[IndexMonitor].FrameBuffer_Driver(EZGUI->Monitor.List[IndexMonitor].Graph.Buffer, EZGUI->Monitor.List[IndexMonitor].Graph.Size, Area);
+            }
+        }
+    }
+}
+EZGUI_Monitor_t *new_EZGUI_Monitor(EZGUI_t *EZGUI) {
+    if(EZGUI->Monitor.Count == 0) {
+        EZGUI->Monitor.List = (EZGUI_Monitor_t *)malloc(sizeof(EZGUI_Monitor_t));
+        if(EZGUI->Monitor.List != 0) {
+            EZGUI->Monitor.Count++;
+            return EZGUI->Monitor.List + (EZGUI->Monitor.Count - 1);
+        }
+    }
+    return 0;
+}
+
+void EZGUI_Monitor_setPixelType(EZGUI_Monitor_t *Monitor, EZGUI_PixelType_t PixelType) {
+    switch(PixelType) {
         case EZGUI_PIXEL_TYPE_MONOCHOME : {
-            New_GUI->DrawPoint_Drv = (DrawPoint_t)EZGUI_Draw_Point_8bit;
+            Monitor->DrawPoint_Driver = (DrawPoint_Driver_t)EZGUI_Draw_Point_8bit;
             break;
         }
         case EZGUI_PIXEL_TYPE_RGB : {
-            New_GUI->DrawPoint_Drv = (DrawPoint_t)EZGUI_Draw_Point_24bit;
+            Monitor->DrawPoint_Driver = (DrawPoint_Driver_t)EZGUI_Draw_Point_24bit;
+            break;
+        }
+        default : {
             break;
         }
     }
-    return New_GUI;
 }
-
-void EZGUI_Update(EZGUI_t *GUI) {
-    Graphics_t DrawGraphic = {.Buf = GUI->Buf[0], .Size = GUI->BlockRes};
-    for(uint16_t IndexVer = 0; IndexVer < GUI->FullRes.Height; IndexVer += GUI->BlockRes.Height) {
-        for(uint16_t IndexHor = 0; IndexHor < GUI->FullRes.Width ; IndexHor += GUI->BlockRes.Width) {
-            memset(GUI->Buf[0], 0, (GUI->BlockRes.Height >> 3) * GUI->BlockRes.Width);
-            /* Render */
-            for(uint8_t IndexControl = 0; GUI->Object.Children[IndexControl] != 0; IndexControl++) {
-                GUI->Object.Children[IndexControl]->Draw(GUI->DrawPoint_Drv, GUI->Object.Children[IndexControl], &DrawGraphic, (Point_t){-IndexHor, -IndexVer});
-            }
-            /* Extract */
-            GUI->Driver(&DrawGraphic, (Area_t){.Start = {.X = IndexHor, .Y = IndexVer}, .Stop = {.X = IndexHor + GUI->BlockRes.Width - 1, .Y = IndexVer + GUI->BlockRes.Height - 1}});
-        }
-    }
+EZGUI_t *new_EZGUI(void) {
+    EZGUI_t *GUI = malloc(sizeof(EZGUI_t));
+    if(GUI) {
+        memset(GUI, 0, sizeof(EZGUI_t));
+    }    
+    return GUI;
 }

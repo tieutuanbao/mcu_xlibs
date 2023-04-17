@@ -5,24 +5,24 @@
  * @brief Vẽ điểm trên Graphic monochrome
  * 
  * @param Graphic 
- * @param Point 
+ * @param Position 
  * @param Color 
  */
-void EZGUI_Draw_Point_8bit(Graphics_t *Graphic, Point_t Point, uint8_t *Color) {
-    if((Point.X < 0) || (Point.Y < 0) || (Point.X >= Graphic->Size.Width) || (Point.Y >= Graphic->Size.Height)) return;
-    if(*Color) ((uint8_t *)(Graphic->Buf))[(Point.Y >> 3) * Graphic->Size.Width + Point.X] |= 0x01 << (Point.Y % 8);
-    else ((uint8_t *)(Graphic->Buf))[(Point.Y >> 3) * Graphic->Size.Width + Point.X] &= ~(0x01 << (Point.Y % 8));
+void EZGUI_Draw_Point_8bit(void *Buffer, Size_t BufferSize, Position_t Position, uint8_t *Color) {
+    if((Position.X < 0) || (Position.Y < 0) || (Position.X >= BufferSize.Width) || (Position.Y >= BufferSize.Height)) return;
+    if(*Color) ((uint8_t *)(Buffer))[(Position.Y >> 3) * BufferSize.Width + Position.X] |= 0x01 << (Position.Y % 8);
+    else ((uint8_t *)(Buffer))[(Position.Y >> 3) * BufferSize.Width + Position.X] &= ~(0x01 << (Position.Y % 8));
 }
 /**
  * @brief Vẽ điểm trên Graphic Fullcolor
  * 
  * @param Graphic 
- * @param Point 
+ * @param Position 
  * @param Color 
  */
-void EZGUI_Draw_Point_24bit(Graphics_t *Graphic, Point_t Point, Color_RGB_t *Color) {
-    if((Point.X < 0) || (Point.Y < 0) || (Point.X >= Graphic->Size.Width) || (Point.Y >= Graphic->Size.Height)) return;
-    ((Color_RGB_t *)(Graphic->Buf))[Point.Y * Graphic->Size.Width + Point.X] = *Color;
+void EZGUI_Draw_Point_24bit(void *Buffer, Size_t BufferSize, Position_t Position, Color_RGB_t *Color) {
+    if((Position.X < 0) || (Position.Y < 0) || (Position.X >= BufferSize.Width) || (Position.Y >= BufferSize.Height)) return;
+    ((Color_RGB_t *)(Buffer))[Position.Y * BufferSize.Width + Position.X] = *Color;
 }
 
 /**
@@ -31,33 +31,33 @@ void EZGUI_Draw_Point_24bit(Graphics_t *Graphic, Point_t Point, Color_RGB_t *Col
  * @param DrawPoint Driver vẽ điểm ảnh
  * @param str Chuỗi cần vẽ
  * @param Graphic Khối Graphic vẽ chữ lên
- * @param Point Vị trí vẽ
+ * @param Position Vị trí vẽ
  * @param Color Màu nội dung
  * @param Font Font chữ
  */
-void EZGUI_Draw_String(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t Point, const char *str, void *Color, const Font_t *Font) {
+void EZGUI_Draw_String(EZGUI_Graphics_t *Graph, DrawPoint_Driver_t DrawPoint, Position_t Position, const char *str, void *Color, const Font_t *Font) {
     if(str == 0) return;
-    if(Graphic == 0) return;
-    if(Point.X > Graphic->Size.Width) return;
-    if(Point.Y > Graphic->Size.Height) return;
+    if(Graph == 0) return;
+    if(Position.X > Graph->Size.Width) return;
+    if(Position.Y > Graph->Size.Height) return;
     Font_Decode_t CharInfo;
 
     for(uint16_t IndexChar = 0; str[IndexChar] != 0x00; IndexChar += CharInfo.ByteCount) {
         CharInfo = Font_DecodeChar(str + IndexChar, Font);
         for(uint16_t IndexWidth = 0; IndexWidth < CharInfo.Char->Width; IndexWidth++) {
-            if((Point.X >= 0) && (Point.X < Graphic->Size.Width)) {
+            if((Position.X >= 0) && (Position.X < Graph->Size.Width)) {
                 for(uint16_t IndexHeight = 0; IndexHeight < CharInfo.Char->Height; IndexHeight++) {
-                    if(((Point.Y + IndexHeight + CharInfo.Char->Top) >= 0) && ((Point.Y + IndexHeight + CharInfo.Char->Top) < Graphic->Size.Height)) {
+                    if(((Position.Y + IndexHeight + CharInfo.Char->Top) >= 0) && ((Position.Y + IndexHeight + CharInfo.Char->Top) < Graph->Size.Height)) {
                         uint8_t Byte8Pixel = CharInfo.Char->Map[(IndexHeight >> 3) * CharInfo.Char->Width + IndexWidth];
                         if(Byte8Pixel & (0x01 << (IndexHeight % 8))) {
-                            DrawPoint(Graphic, (Point_t){.X = Point.X, .Y = Point.Y + IndexHeight + CharInfo.Char->Top}, Color);
+                            DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = Position.X, .Y = Position.Y + IndexHeight + CharInfo.Char->Top}, Color);
                         }
                     }
                 }
             }
-            Point.X++;
+            Position.X++;
         }
-        Point.X++;
+        Position.X++;
     }
 }
 /**
@@ -70,7 +70,7 @@ void EZGUI_Draw_String(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t Point
  * @param Step Bước vẽ
  * @param Color Màu vẽ
  */
-void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Point_t StopPos, uint8_t Step, void *Color) {
+void EZGUI_Draw_Line(EZGUI_Graphics_t *Graph, DrawPoint_Driver_t DrawPoint, Position_t StartPos, Position_t StopPos, uint8_t Step, void *Color) {
     int32_t DistanceX = StopPos.X - StartPos.X;
     int32_t DistanceY = StopPos.Y - StartPos.Y;
     if(DistanceX < 0) {
@@ -86,13 +86,13 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
         if(StartPos.Y > StopPos.Y) {
             while(StartPos.Y > StopPos.Y) {
                 StartPos.Y -= Step;
-                if(StartPos.Y < Graphic->Size.Height) {
+                if(StartPos.Y < Graph->Size.Height) {
                     if(StartPos.Y < 0) {
                         StartPos.Y = 0;
-                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                        DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                    DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
@@ -101,18 +101,18 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
             while(StartPos.Y < StopPos.Y) {
                 StartPos.Y += Step;
                 if(StartPos.Y >= 0) {
-                    if(StartPos.Y > Graphic->Size.Height) {
-                        StartPos.Y = Graphic->Size.Height;
-                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                    if(StartPos.Y > Graph->Size.Height) {
+                        StartPos.Y = Graph->Size.Height;
+                        DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                    DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
         /* Vẽ 1 điểm duy nhất */
         else {
-            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+            DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }
     }
     /* Đường thẳng ngang */
@@ -121,13 +121,13 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
         if(StartPos.X > StopPos.X) {
             while(StartPos.X > StopPos.X) {
                 StartPos.X -= Step;
-                if(StartPos.X < Graphic->Size.Width) {
+                if(StartPos.X < Graph->Size.Width) {
                     if(StartPos.X < 0) {
                         StartPos.X = 0;
-                        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                        DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                         break;
                     }
-                    DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                    DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
                 }
             }
         }
@@ -135,15 +135,15 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
         else if(StartPos.X < StopPos.X) {
             while(StartPos.X < StopPos.X) {
                 StartPos.X += Step;
-                if(StartPos.X > Graphic->Size.Width) {
-                    StartPos.X = Graphic->Size.Width;
+                if(StartPos.X > Graph->Size.Width) {
+                    StartPos.X = Graph->Size.Width;
                     break;
                 }
-                DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+                DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
             }
         }
         else {
-            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+            DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }
     }
     /* Đường thẳng chéo */
@@ -151,7 +151,7 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
         if(StartPos.Y > StopPos.Y) {
             Step = -Step;
         }
-        DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+        DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         while(StartPos.X != StopPos.X) {
             if (DistanceNearPoint < 0) DistanceNearPoint += (2 * DistanceY);
             else {
@@ -160,35 +160,35 @@ void EZGUI_Draw_Line(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPo
             }
             if(StartPos.X > StopPos.X) StartPos.X--;
             else StartPos.X++;
-            DrawPoint(Graphic, (Point_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
+            DrawPoint(Graph->Buffer, Graph->Size, (Position_t){.X = StartPos.X, .Y = StartPos.Y}, Color);
         }
     }
 }
 
-void EZGUI_Draw_Rectangle(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, void *Color) {
-    Point_t StopPos = (Point_t){(int32_t)Size.Width + StartPos.X, (int32_t)Size.Height + StartPos.Y};
-    for(int32_t IndexHeight = StartPos.Y; IndexHeight < StopPos.Y; IndexHeight++) {
-        if(IndexHeight >= 0) {
-            for(int32_t IndexWidth = StartPos.X; IndexWidth < StopPos.X; IndexWidth++) {
-                if(IndexWidth >= 0) {
-                    DrawPoint(Graphic, (Point_t){IndexWidth, IndexHeight}, Color);
+void EZGUI_Draw_Rectangle(EZGUI_Graphics_t *Graph, DrawPoint_Driver_t DrawPoint, Position_t StartPos, Position_t StopPos, void *Color) {
+    Position_t DrawPos;
+    for(DrawPos.Y = StartPos.Y; DrawPos.Y <= StopPos.Y; DrawPos.Y++) {
+        if(DrawPos.Y >= 0) {
+            for(DrawPos.X = StartPos.X; DrawPos.X <= StopPos.X; DrawPos.X++) {
+                if(DrawPos.X >= 0) {
+                    DrawPoint(Graph->Buffer, Graph->Size, (Position_t){DrawPos.X, DrawPos.Y}, Color);
                 }
             }
         }
     }
 }
 
-void EZGUI_Draw_Image(DrawPoint_t DrawPoint, Graphics_t *Graphic, Point_t StartPos, Size_t Size, Color_ARGB_t (*Image_GetPixel)(Point_t PosPixel)) {
-    Point_t DrawPos = {0, 0};
+void EZGUI_Draw_Image(EZGUI_Graphics_t *Graph, DrawPoint_Driver_t DrawPoint, Position_t StartPos, Size_t Size, Color_ARGB_t (*Image_GetPixel)(Point_t PosPixel)) {
+    Position_t DrawPos = {0, 0};
     Color_ARGB_t PixelColor;
     for(int32_t IndexHeight = 0; IndexHeight < Size.Height; IndexHeight++) {
         DrawPos.Y = StartPos.Y + IndexHeight;
-        if((DrawPos.Y >= 0) && (DrawPos.Y < Graphic->Size.Height)) {
+        if((DrawPos.Y >= 0) && (DrawPos.Y < Graph->Size.Height)) {
             for(int32_t IndexWidth = 0; IndexWidth < Size.Width; IndexWidth++) {
                 DrawPos.X = StartPos.X + IndexWidth;
-                if((DrawPos.X >= 0) && (DrawPos.X < Graphic->Size.Width)) {
-                    PixelColor = Image_GetPixel((Point_t){.X = IndexWidth, .Y = IndexHeight});
-                    DrawPoint(Graphic, DrawPos, &PixelColor);
+                if((DrawPos.X >= 0) && (DrawPos.X < Graph->Size.Width)) {
+                    PixelColor = Image_GetPixel((Position_t){.X = IndexWidth, .Y = IndexHeight});
+                    DrawPoint(Graph->Buffer, Graph->Size, DrawPos, &PixelColor);
                 }
             }
         }
