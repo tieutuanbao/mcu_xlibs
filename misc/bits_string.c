@@ -1,5 +1,26 @@
 #include "bits_string.h"
 
+uint8_t Bits_Char_toNum(char c, uint8_t base) {
+    switch(base) {
+        case 10: {
+            return (c - '0');
+        }
+        case 16: {
+            if((c >= 'A') && (c <= 'F')) {
+                return c - 55;
+            }
+            else if((c >= 'a') && (c <= 'f')) {
+                return c - 87;
+            }
+            else if((c >= '0') && (c <= '9')) {
+                return c - '0';
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
 void Bits_String_ToLower(char *c) {
     if(c == 0) return;
     while(*c != 0){
@@ -13,15 +34,59 @@ char Bits_Char_ToLower(char c) {
     else return c;
 }
 
-long int Bits_String_ToInt(char *str) {
+
+/**
+ * @brief 
+ * 
+ * @param str Chuỗi cần chuyển đổi
+ * @param len Độ dài chuỗi
+ * @param base 10: decimal, 16: hexadecimal
+ * @return long int 
+ */
+long int Bits_String_ToInt(char *str, uint8_t len, uint8_t base) {
     long int ret = 0;
     uint8_t idx_digit = 0;
-    for(idx_digit = 0; idx_digit < 10; idx_digit++) {
-        if(Bits_CharIsNum(*str)) {
-            ret = (ret * 10) + Bits_CharToNum(*str);
+    bool isNeg = false;
+    if(base == 16) {
+        if((str[0] == '0') && ((str[1] == 'x') || (str[1] == 'X'))) {
+            str += 2;
+            if(len >= 2) {
+                len -= 2;
+            }
         }
-        else {
-            return ret;
+        if(len > 8) {
+            return 0;
+        }
+    }
+    else if(base == 10) {
+        if(str[0] == '-') {
+            isNeg = true;
+            str++;
+            if(len >= 1) {
+                len -= 1;
+            }
+        }
+    }
+    for(idx_digit = 0; idx_digit < len; idx_digit++) {
+        if(base == 10) {
+            if(Bits_CharIsNum(*str)) {
+                ret = (ret * 10) + Bits_CharToNum(*str);
+            }
+            else {
+                if(isNeg == true) {
+                    ret = 0 - ret;
+                }
+                return ret;
+            }
+        }
+        else if(base == 16) {
+            if(Bits_CharIsHex(str[0])) {
+                ret <<= 4;
+                ret |= Bits_Char_toNum(str[0], 16);
+            }
+            else {
+                return ret;
+            }
         }
         str++;
     }
@@ -40,24 +105,45 @@ char *Bits_String_FindString(const char *str, size_t str_len, const char *str_fi
     return 0;
 }
 
-int Bits_sprintf(char * str, const char * format, ... ) {
-    va_list args;
-    va_start(args, format);
-    vsprintf(str,format, args);
-    va_end(args);
-    return 0;
-}
-
-char *Bits_Int_ToString(long int num, char *buf, uint8_t size_buf) {
+void Bits_String_fromInt(long int num, char *buf, uint8_t size_buf, uint8_t specChar) {
     long int temp_div = 0;
     uint8_t count_digit = 0;
-    /* Đếm số digit trong num */
-    count_digit = Bits_Int_CountDigit(num);    
-    if(count_digit > size_buf) count_digit = size_buf;  /* Giới hạn số digit theo size_buf */    
-    temp_div = Bits_Int_Pow(10, count_digit);
-    for(uint8_t idx_digit = 0; idx_digit < count_digit; idx_digit++) {
-        temp_div /= 10;
-        buf[idx_digit] = ((num / temp_div) % 10) + '0';
+    switch(specChar) {
+        case 'd' : {
+            /* Đếm số digit trong num */
+            count_digit = Bits_Int_CountDigit(num);    
+            if(count_digit > size_buf) count_digit = size_buf;  /* Giới hạn số digit theo size_buf */    
+            temp_div = Bits_Int_Pow(10, count_digit);
+            for(uint8_t idx_digit = 0; idx_digit < count_digit; idx_digit++) {
+                temp_div /= 10;
+                buf[idx_digit] = ((num / temp_div) % 10) + '0';
+            }
+            break;
+        }
+        case 'x': case 'X' : {
+            uint8_t countHex = 0;
+            while((num >> (4 * countHex)) != 0) {
+                countHex++;
+            }
+            for(uint8_t indexBuf = countHex; indexBuf > 0; indexBuf--) {
+                uint8_t tempHex = num & 0x0F;
+                if(tempHex >= 10) {
+                    if(specChar == 'x') {
+                        buf[indexBuf - 1] = tempHex + 87;
+                    }
+                    else {
+                        buf[indexBuf - 1] = tempHex + 55;
+                    }
+                }
+                else {
+                    buf[indexBuf - 1] = tempHex + '0';
+                }
+                num >>= 4;
+                if(num == 0) {
+                    return;
+                }
+            }
+            break;
+        }
     }
-    return buf;
 }

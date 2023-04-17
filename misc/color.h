@@ -19,13 +19,22 @@
 #define COLOR_WHITE             SampleColor[13]
 #define COLOR_BY_ID(n)          SampleColor[n]
 
-typedef struct __attribute__((packed)) {
+#pragma pack(1)
+typedef struct {
     uint8_t R;
     uint8_t G;
     uint8_t B;
 } Color_RGB_t;
 
-typedef struct __attribute__((packed)) {
+#pragma pack(1)
+typedef struct {
+    int16_t R;
+    int16_t G;
+    int16_t B;
+} Color_RGB_Signed_t;
+
+#pragma pack(1)
+typedef struct {
     Color_RGB_t RGB;
     uint8_t A;
 } Color_ARGB_t;
@@ -48,5 +57,7 @@ typedef enum {
 } SampleColorID_t;
 
 extern const Color_RGB_t SampleColor[];
+
+Color_RGB_t ColorRGB_fromHexCodeString(char *hexString);
 
 #endif

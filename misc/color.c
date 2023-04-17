@@ -1,4 +1,6 @@
 #include "color.h"
+#include "bits_math.h"
+#include "bits_string.h"
 
 const Color_RGB_t SampleColor[] = {
 	{0x00,0x00,0x00},
@@ -16,3 +18,12 @@ const Color_RGB_t SampleColor[] = {
 	{0xff,0x00,0x80},
 	{0xff,0xff,0xff}
 };
+
+Color_RGB_t ColorRGB_fromHexCodeString(char *hexString) {
+	Color_RGB_t colorTemp = {0, 0, 0};
+	if(hexString[0] == '#') {
+		hexString++;
+	}
+	*((long *)&colorTemp) = Bits_String_ToInt(hexString, 6, 16);
+	return (Color_RGB_t){colorTemp.B, colorTemp.G, colorTemp.R};
+}
