@@ -3,9 +3,15 @@
 static LEDStripEffect_State_t LEDStripEffect_fade_exec(LEDStripEffect_fade_t *eff, LedStripEffect_tick_t currentTick) {
     LEDStripEffect_State_t ret = LEDStrip_effectState_running;
     currentTick = currentTick - eff->base.lastTick;
-    if((currentTick < 0) || (currentTick >= eff->base.runInterval) || (eff->base.runInterval == 0) || (eff->led.at == 0) || (eff->led.count == 0)) {
+    if((eff->led.at == 0) || (eff->led.count == 0)) {
+        return LEDStrip_effectState_stop;
+    }
+    if((currentTick < 0) || (eff->base.runInterval == 0)) {
         currentTick = 1;
-        eff->base.runInterval = 1;
+        eff->base.runInterval = 2;
+        ret = LEDStrip_effectState_stop;
+    }
+    if(currentTick >= (eff->base.runInterval - 1)) {
         ret = LEDStrip_effectState_stop;
     }
     eff->led.at[0] = LEDStripEffect_getColorGradient(currentTick, eff->base.runInterval, eff->stripColor.at, eff->stripColor.count);

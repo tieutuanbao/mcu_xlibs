@@ -29,7 +29,6 @@ void main(){
     {
         for(;; tick++){
             LEDStripEffect_State_t ret = effectPar.exec(&effectPar, tick);
-            printf("Color: %d;%d;%d", led_buf[0].R, led_buf[0].G, led_buf[0].B);
             /* Test in màu */
             for(uint16_t idx_led = 0; idx_led < LED_LENGTH; idx_led++){
                 printf("\x1b[38;2;%d;%d;%dm#", led_buf[idx_led].R, led_buf[idx_led].G, led_buf[idx_led].B);
