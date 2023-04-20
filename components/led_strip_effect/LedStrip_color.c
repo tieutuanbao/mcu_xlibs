@@ -10,11 +10,14 @@
  * @return Color_RGB_t 
  */
 Color_RGB_t LEDStripEffect_getColorGradient(uint32_t colorAt, uint32_t resolution, Color_RGB_t *colorStrip, uint8_t colorCount) {
-    if((colorCount == 0) || (colorStrip == 0) || (resolution == 0) || (colorAt >= resolution)) {
+    if((colorCount == 0) || (colorStrip == 0) || (resolution == 0)) {
         return (Color_RGB_t){0, 0, 0};
     }
     if(colorCount == 1) {
         return colorStrip[0];
+    }
+    if(colorAt >= resolution) {
+        return colorStrip[colorCount - 1];
     }
     uint32_t resolutionPerSeg = resolution / (colorCount - 1); // số lượng frame mỗi khoảng màu
     uint32_t currentFrame = colorAt % (resolutionPerSeg); // chỉ mục của frame ở mỗi khoảng màu
@@ -29,7 +32,7 @@ Color_RGB_t LEDStripEffect_getColorGradient(uint32_t colorAt, uint32_t resolutio
                                                     (int16_t)(endColor.G )- (int16_t)(startColor.G),
                                                     (int16_t)(endColor.B) - (int16_t)(startColor.B)};
     Color_RGB_t ret;
-    int16_t rateBrightness = currentFrame * 100 / resolutionPerSeg;
+    int16_t rateBrightness = currentFrame * 100 / (resolutionPerSeg - 1);
     ret.R = startColor.R  + (rateBrightness * diff.R) / 100;
     ret.G = startColor.G  + (rateBrightness * diff.G) / 100;
     ret.B = startColor.B  + (rateBrightness * diff.B) / 100;
