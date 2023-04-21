@@ -1,6 +1,7 @@
 #ifndef __LED_STRIP_EFFECT_H__
 #define __LED_STRIP_EFFECT_H__
 
+#include "env.h"
 #include "color.h"
 #include "LedStrip_color.h"
 #include <stdbool.h>
