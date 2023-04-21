@@ -53,7 +53,8 @@ typedef enum {
     COLOR_VIOLET_ID,
     COLOR_MAGENTA_ID,
     COLOR_ROSE_ID,
-    COLOR_WHITE_ID
+    COLOR_WHITE_ID,
+    COLOR_MAX_ID
 } SampleColorID_t;
 
 extern const Color_RGB_t SampleColor[];
