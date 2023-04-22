@@ -4,8 +4,7 @@
 #include <time.h>
 
 #include "port.h"
-#include "LedStripEffect_FadeInWipe.h"
-#include "LedStripEffect_FadeOutWipe.h"
+#include "LedStripEffect_FadeWipe.h"
 #include "LEDStrip_effect.h"
 
 #define LED_LENGTH  20
@@ -17,27 +16,21 @@ Color_RGB_t led_buf[LED_LENGTH];
 
 void main(){
     LEDStripEffect_t effectPar;
-    LEDStripEffect_fadeInWipe_t fadeInCW;
-    LEDStripEffect_fadeOutWipe_t fadeOutCW;
-    LEDStripEffect_fadeInWipe_t fadeInCCW;
-    LEDStripEffect_fadeOutWipe_t fadeOutCCW;
-    Color_RGB_t fadeInColorStripCW[] = {COLOR_GREEN, COLOR_GREEN};
-    Color_RGB_t fadeOutColorStripCW[] = {COLOR_GREEN, COLOR_GREEN};
-    Color_RGB_t fadeInColorStripCCW[] = {COLOR_RED, COLOR_RED};
-    Color_RGB_t fadeOutColorStripCCW[] = {COLOR_RED, COLOR_RED};
+    LEDStripEffect_fadeWipe_t fadeCW[2];
+    LEDStripEffect_fadeWipe_t fadeCCW[2];
     /* init effect */
     LEDStripEffect_init(&effectPar);
     /* arg0 = con trỏ hiệu ứng, arg1 = tick bắt đầu hiệu ứng, arg3 = thời gian chạy hiệu ứng(ms), arg4 = Buffer dải led, arg5 = độ dài LED, arg5 = dải màu gradient áp dụng cho hiệu ứng, arg6 = số lượng màu trong dải */
-    LEDStripEffect_fadeInWipe_init(&fadeInCW, tick, 2000, led_buf, LED_LENGTH, fadeInColorStripCW, 2, true);
-    LEDStripEffect_fadeOutWipe_init(&fadeOutCW, tick + 2000, 2000, led_buf, LED_LENGTH, fadeOutColorStripCW, 2, false);
-    LEDStripEffect_fadeInWipe_init(&fadeInCCW, tick + 2000 + 2000, 2000, led_buf, LED_LENGTH, fadeInColorStripCCW, 2, false);
-    LEDStripEffect_fadeOutWipe_init(&fadeOutCCW,  tick + 2000 + 2000 + 2000, 2000, led_buf, LED_LENGTH, fadeOutColorStripCCW, 2, true);
-    LEDStripEffect_addEffect(&effectPar, (LEDStripEffect_t *)&fadeInCW);
-    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeInCW, (LEDStripEffect_t *)&fadeOutCW);
-    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeOutCW, (LEDStripEffect_t *)&fadeInCCW);
-    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeInCCW, (LEDStripEffect_t *)&fadeOutCCW);
+    LEDStripEffect_fadeWipe_init(&fadeCW[0], tick, 10000, led_buf, LED_LENGTH, (Color_RGB_t []){COLOR_BLACK, COLOR_BLACK}, 2, (Color_RGB_t []){COLOR_RED, COLOR_GREEN}, 2, true);
+    LEDStripEffect_fadeWipe_init(&fadeCCW[0], tick + 10000, 10000, led_buf, LED_LENGTH, (Color_RGB_t []){COLOR_RED, COLOR_GREEN}, 2, (Color_RGB_t []){COLOR_VIOLET, COLOR_ROSE}, 2, false);
+    LEDStripEffect_fadeWipe_init(&fadeCW[1], tick + 20000, 10000, led_buf, LED_LENGTH, (Color_RGB_t []){COLOR_VIOLET, COLOR_ROSE}, 2, (Color_RGB_t []){COLOR_CYAN, COLOR_YELLOW}, 2, true);
+    LEDStripEffect_fadeWipe_init(&fadeCCW[1], tick + 30000, 10000, led_buf, LED_LENGTH, (Color_RGB_t []){COLOR_CYAN, COLOR_YELLOW}, 2, (Color_RGB_t []){COLOR_BLACK, COLOR_BLACK}, 2, false);
+    LEDStripEffect_addEffect(&effectPar, (LEDStripEffect_t *)&fadeCW);
+    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeCW[0], (LEDStripEffect_t *)&fadeCCW[0]);
+    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeCCW[0], (LEDStripEffect_t *)&fadeCW[1]);
+    LEDStripEffect_addEffect((LEDStripEffect_t *)&fadeCW[1], (LEDStripEffect_t *)&fadeCCW[1]);
     {
-        for(;; tick++){
+        for(;; tick++) {
             LEDStripEffect_State_t ret = effectPar.exec(&effectPar, tick);
             /* Test in màu */
             for(uint16_t idx_led = 0; idx_led < LED_LENGTH; idx_led++){

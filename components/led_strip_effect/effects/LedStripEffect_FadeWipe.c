@@ -1,7 +1,7 @@
-#include "LedStripEffect_FadeInWipe.h"
+#include "LedStripEffect_FadeWipe.h"
 #include <stdlib.h>
 
-static LEDStripEffect_State_t LEDStripEffect_fadeInWipe_exec(LEDStripEffect_fadeInWipe_t *eff, LedStripEffect_tick_t currentTick) {
+static LEDStripEffect_State_t LEDStripEffect_fadeWipe_exec(LEDStripEffect_fadeWipe_t *eff, LedStripEffect_tick_t currentTick) {
     LEDStripEffect_State_t ret = LEDStrip_effectState_running;
     currentTick = currentTick - eff->base.lastTick;
     if(currentTick < 0) {
@@ -20,10 +20,10 @@ static LEDStripEffect_State_t LEDStripEffect_fadeInWipe_exec(LEDStripEffect_fade
     if(currentTickLed > tickPerLed) {
         currentTickLed = tickPerLed;
     }
-    Color_RGB_t currentColor = LEDStripEffect_getColorGradient(eff->indexLed, eff->led.count, eff->stripColor.at, eff->stripColor.count);
-    eff->led.at[eff->indexLed].R = currentTickLed * (uint32_t)currentColor.R / (tickPerLed - 1);
-    eff->led.at[eff->indexLed].G = currentTickLed * (uint32_t)currentColor.G / (tickPerLed - 1);
-    eff->led.at[eff->indexLed].B = currentTickLed * (uint32_t)currentColor.B / (tickPerLed - 1);
+    Color_RGB_t startColor = LEDStripEffect_getColorGradient(eff->indexLed, eff->led.count, eff->startColor.at, eff->startColor.count);
+    Color_RGB_t stopColor = LEDStripEffect_getColorGradient(eff->indexLed, eff->led.count, eff->stopColor.at, eff->stopColor.count);
+    Color_RGB_t currentColor = LEDStripEffect_getColorGradient(currentTickLed, tickPerLed, (Color_RGB_t []){startColor, stopColor}, 2);
+    eff->led.at[eff->indexLed] = currentColor;
     if(currentTickLed >= (tickPerLed - 1)) {
         if(eff->dir) {
             eff->indexLed++;
@@ -49,23 +49,26 @@ static LEDStripEffect_State_t LEDStripEffect_fadeInWipe_exec(LEDStripEffect_fade
  * @param runInterval Thời gian chạy millisecond, không nhỏ hơn số lượng LED
  * @param ledBuffer Buffer LED
  * @param ledCount Số mắt LED
- * @param colorBuffer Buffer dải màu Gradient
+ * @param colorStrip Buffer dải màu Gradient
  * @param colorCount Số lượng màu trong dải
- * @return LEDStripEffect_fadeInWipe_t* 
+ * @return LEDStripEffect_fadeWipe_t* 
  */
-LEDStripEffect_fadeInWipe_t *LEDStripEffect_fadeInWipe_init(LEDStripEffect_fadeInWipe_t *eff, LedStripEffect_tick_t currentTick, uint32_t runInterval, Color_RGB_t *ledBuffer, uint16_t ledCount, Color_RGB_t *colorBuffer, uint8_t colorCount, bool dir) {
+LEDStripEffect_fadeWipe_t *LEDStripEffect_fadeWipe_init(LEDStripEffect_fadeWipe_t *eff, LedStripEffect_tick_t currentTick, uint32_t runInterval, Color_RGB_t *ledBuffer, uint16_t ledCount, 
+                                                            Color_RGB_t *startColor, uint8_t startColorCount, Color_RGB_t *stopColor, uint8_t stopColorCount, bool dir) {
     if(ledCount == 0) {
-        return (LEDStripEffect_fadeInWipe_t *)0;
+        return (LEDStripEffect_fadeWipe_t *)0;
     }
     eff->base.effects = 0;
-    eff->base.exec = (LEDStripEffect_exec_t)LEDStripEffect_fadeInWipe_exec;
+    eff->base.exec = (LEDStripEffect_exec_t)LEDStripEffect_fadeWipe_exec;
     eff->base.lastTick = currentTick;
     eff->base.runInterval = runInterval;
 
     eff->led.at = ledBuffer;
     eff->led.count = ledCount;
-    eff->stripColor.at = colorBuffer;
-    eff->stripColor.count = colorCount;
+    eff->startColor.at = startColor;
+    eff->startColor.count = startColorCount;
+    eff->stopColor.at = stopColor;
+    eff->stopColor.count = stopColorCount;
     eff->dir = dir;
     if(eff->dir) {
         eff->indexLed = 0;
