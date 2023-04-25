@@ -63,7 +63,7 @@ bool LEDStripEffect_removeEffect(LEDStripEffect_t *eff, void *effect) {
                             }
                             LEDStripEffect_t **newEffAdd = (LEDStripEffect_t **)realloc(parrent->effects, effCount * sizeof(void (*)));
                             if(newEffAdd != 0) {
-                                parrent->effects = newEffAdd;
+                                parrent->effects = (void **)newEffAdd;
                                 eff->effects[effCount - 1] = 0;
                             }
                         }
@@ -80,16 +80,16 @@ bool LEDStripEffect_removeEffect(LEDStripEffect_t *eff, void *effect) {
     return false;
 }
 
-LEDStripEffect_State_t LEDStripEffect_run(LEDStripEffect_t *eff, LedStripEffect_tick_t currentTick) {
+LEDStripEffect_State_t LEDStripEffect_run(LEDStripEffect_Drv_t *eff, LedStripEffect_tick_t currentTick) {
     if(eff->effects != 0) {
-        if(((LEDStripEffect_t *)eff->effects[0])->exec(eff->effects[0], currentTick) == LEDStrip_effectState_stop) {
-            if(((LEDStripEffect_t *)eff->effects[0])->effects != 0) {
-                if(((LEDStripEffect_t *)eff->effects[0])->effects[0] != 0)
-                eff->effects[0] = ((LEDStripEffect_t *)eff->effects[0])->effects[0];
+        if(((LEDStripEffect_t *)(eff->effects[0]))->exec(eff->effects[0], eff->pixelAt_set, currentTick) == LEDStrip_effectState_stop) {
+            if(((LEDStripEffect_t *)(eff->effects[0]))->effects != 0) {
+                if(((LEDStripEffect_t *)(eff->effects[0]))->effects[0] != 0)
+                eff->effects[0] = ((LEDStripEffect_t *)(eff->effects[0]))->effects[0];
                 return LEDStrip_effectState_running;
             }
             else {
-                LEDStripEffect_removeEffect(eff, eff->effects[0]);
+                LEDStripEffect_removeEffect((LEDStripEffect_t *)eff, eff->effects[0]);
                 return LEDStrip_effectState_stop;
             }
         }
@@ -124,9 +124,4 @@ void LEDStripEffect_addEffect(LEDStripEffect_t *parrent, LEDStripEffect_t *child
             parrent->effects[indexEff] = 0;
         }
     }
-}
-
-void LEDStripEffect_init(LEDStripEffect_t *ledStripEff) {
-    ledStripEff->effects = 0;
-    ledStripEff->exec = (LEDStripEffect_exec_t)LEDStripEffect_run;
 }

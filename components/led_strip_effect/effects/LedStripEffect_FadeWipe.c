@@ -1,7 +1,7 @@
 #include "LedStripEffect_FadeWipe.h"
 #include <stdlib.h>
 
-static LEDStripEffect_State_t LEDStripEffect_fadeWipe_exec(LEDStripEffect_fadeWipe_t *eff, LedStripEffect_tick_t currentTick) {
+static LEDStripEffect_State_t LEDStripEffect_fadeWipe_exec(LEDStripEffect_fadeWipe_t *eff, void (*pixelAt_set)(uint16_t index, Color_RGB_t color), LedStripEffect_tick_t currentTick) {
     LEDStripEffect_State_t ret = LEDStrip_effectState_running;
     currentTick = currentTick - eff->base.lastTick;
     if(currentTick < 0) {
@@ -23,7 +23,7 @@ static LEDStripEffect_State_t LEDStripEffect_fadeWipe_exec(LEDStripEffect_fadeWi
     Color_RGB_t startColor = LEDStripEffect_getColorGradient(eff->indexLed, eff->led.count, eff->startColor.at, eff->startColor.count);
     Color_RGB_t stopColor = LEDStripEffect_getColorGradient(eff->indexLed, eff->led.count, eff->stopColor.at, eff->stopColor.count);
     Color_RGB_t currentColor = LEDStripEffect_getColorGradient(currentTickLed, tickPerLed, (Color_RGB_t []){startColor, stopColor}, 2);
-    eff->led.at[eff->indexLed] = currentColor;
+    pixelAt_set(eff->indexLed, currentColor);
     if(currentTickLed >= (tickPerLed - 1)) {
         if(eff->dir) {
             eff->indexLed++;

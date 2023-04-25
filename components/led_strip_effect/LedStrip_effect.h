@@ -17,7 +17,7 @@ typedef enum {
     LEDStrip_effectState_stop
 } LEDStripEffect_State_t;
 
-typedef LEDStripEffect_State_t (*LEDStripEffect_exec_t)(void *eff, LedStripEffect_tick_t currentTick);
+typedef LEDStripEffect_State_t (*LEDStripEffect_exec_t)(void *eff, void (*pixelAt_set)(uint16_t index, Color_RGB_t color), LedStripEffect_tick_t currentTick);
 
 typedef struct {
     void **effects;
@@ -26,8 +26,13 @@ typedef struct {
     uint16_t runInterval; // Tổng thời gian chạy của hiệu ứng
 } LEDStripEffect_t;
 
-void LEDStripEffect_init(LEDStripEffect_t *ledStripEff);
+typedef struct {
+    void **effects;
+    void (*pixelAt_set)(uint16_t index, Color_RGB_t color);
+} LEDStripEffect_Drv_t;
+
 void LEDStripEffect_addEffect(LEDStripEffect_t *parrent, LEDStripEffect_t *children);
 bool LEDStripEffect_removeEffect(LEDStripEffect_t *eff, void *effect);
+LEDStripEffect_State_t LEDStripEffect_run(LEDStripEffect_Drv_t *eff, LedStripEffect_tick_t currentTick);
 
 #endif
