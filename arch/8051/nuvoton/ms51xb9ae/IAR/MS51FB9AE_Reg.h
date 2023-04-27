@@ -97,9 +97,22 @@ __sfr __no_init volatile union
 __sfr __no_init volatile unsigned char SBUF        @ 0x99;
 __sfr __no_init volatile unsigned char SBUF_1      @ 0x9A;
 __sfr __no_init volatile unsigned char EIE         @ 0x9B;
-__sfr __no_init volatile unsigned char EIE1        @ 0x9C;
-__sfr __no_init volatile unsigned char CHPCON      @ 0x9F; //TA Protection
-
+__sfr __no_init volatile union
+{
+  unsigned char EIE1;
+  struct
+  {
+    unsigned char BIT0 : 1;
+    unsigned char BIT1 : 1;
+    unsigned char BIT2 : 1;
+    unsigned char BIT3 : 1;
+    unsigned char BIT4 : 1;
+    unsigned char BIT5 : 1;
+    unsigned char BIT6 : 1;
+    unsigned char BIT7 : 1;
+  } EIE1_bit;
+} @ 0x9C;
+__sfr __no_init volatile unsigned char CHPCON      @ 0x9F;
 __sfr __no_init volatile union
 {
   unsigned char P2; /* Port 2 */
@@ -436,6 +449,13 @@ __sfr __no_init volatile unsigned char EIPH1       @ 0xFF;
 #define RB8         SCON_bit.BIT2
 #define TI          SCON_bit.BIT1
 #define RI          SCON_bit.BIT0
+
+/* EIE_1 */
+#define SMOD_1      EIE1_bit.BIT7
+#define SMOD0_1     EIE1_bit.BIT6
+#define BRCK        EIE1_bit.BIT5
+#define TF3         EIE1_bit.BIT4
+#define TR3         EIE1_bit.BIT3
 
 /*  P2  */
 #define P20         P2_bit.BIT0
