@@ -6,11 +6,12 @@ LEDSingleEffects_state_t LEDSingleEffects_fadeWipe_run(LedSingleEffects_fadeWipe
         return LEDSingle_effectState_STOP;
     }
     uint32_t nextLEDInterval = effect->runInterval / effect->led.count;
+    effect->led.now = nowTick / nextLEDInterval;
     if(effect->dirWipe == true) {
-        drv(nowTick / nextLEDInterval, effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
+        drv(effect->led.now, effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
     }
     else {
-        drv(effect->led.count - (nowTick / nextLEDInterval), effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
+        drv(effect->led.count - (effect->led.now), effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
     }
     return LEDSingle_effectState_RUNNING;
 }

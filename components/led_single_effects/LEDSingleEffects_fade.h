@@ -8,7 +8,6 @@ typedef struct {
     LEDSingleEffects_exec_t exec;
     struct {
         uint32_t count;
-        uint32_t now;
     } led;
     LEDSingleEffect_tick_t startTick;
     uint32_t runInterval;

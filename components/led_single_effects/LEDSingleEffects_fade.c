@@ -29,7 +29,6 @@ void LEDSingleEffects_fade_init(
 {
     effect->startTick = nowTick;
     effect->led.count = LEDCount;
-    effect->led.now = 0;
     effect->beginBrightness = beginBrightness;
     effect->endBrightness = endBrightness;
     effect->runInterval = runInterval;

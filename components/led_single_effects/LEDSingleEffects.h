@@ -1,5 +1,5 @@
-#ifndef __LEDSINGLEEFFECTs_H__
-#define __LEDSINGLEEFFECTs_H__
+#ifndef __LEDSINGLEEFFECTS_H__
+#define __LEDSINGLEEFFECTS_H__
 
 #include <stdint.h>
 

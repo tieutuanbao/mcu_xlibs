@@ -67,9 +67,11 @@ void main() {
             effect = 0;
         }
         /* Mô phỏng LED */
+        printf("\e[?25l"); // hide cursor
         for(uint16_t indexLED = 0; indexLED < MAX_LED_BUFFER; indexLED++){
             printf("\x1b[38;2;%dm#", ledBuffer[indexLED]);
         }
+        printf("\e[?25h"); // enable cursor
         printf("\r");
         virtualTick++;
         usleep(1000);
