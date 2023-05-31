@@ -16,7 +16,6 @@ typedef struct {
     uint8_t endBrightness;
 } LedSingleEffects_fade_t;
 
-LEDSingleEffects_state_t LEDSingleEffects_fade_run(LedSingleEffects_fade_t *effect, LEDSingleEffects_setBrightnessLED_t drv, LEDSingleEffect_tick_t nowTick);
 void LEDSingleEffects_fade_init(
         LedSingleEffects_fade_t *effect,
         uint32_t LEDCount, uint8_t beginBrightness, uint8_t endBrightness,
