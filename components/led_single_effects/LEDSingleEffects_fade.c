@@ -1,6 +1,6 @@
 #include "LEDSingleEffects_fade.h"
 
-LEDSingleEffects_state_t LEDSingleEffects_fade_run(LedSingleEffects_fade_t *effect, LEDSingleEffects_setBrightnessLED_t drv, LEDSingleEffect_tick_t nowTick) {
+static LEDSingleEffects_state_t LEDSingleEffects_fade_run(LedSingleEffects_fade_t *effect, LEDSingleEffects_setBrightnessLED_t drv, LEDSingleEffect_tick_t nowTick) {
     nowTick = nowTick - effect->startTick;
     if(nowTick >= effect->runInterval) {
         return LEDSingle_effectState_STOP;

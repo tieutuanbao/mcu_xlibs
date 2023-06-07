@@ -1,17 +1,32 @@
 #include "LEDSingleEffects_fadeWipe.h"
 
-LEDSingleEffects_state_t LEDSingleEffects_fadeWipe_run(LedSingleEffects_fadeWipe_t *effect, LEDSingleEffects_setBrightnessLED_t drv, LEDSingleEffect_tick_t nowTick) {
+static LEDSingleEffects_state_t LEDSingleEffects_fadeWipe_run(LedSingleEffects_fadeWipe_t *effect, LEDSingleEffects_setBrightnessLED_t drv, LEDSingleEffect_tick_t nowTick) {
     nowTick = nowTick - effect->startTick;
     if(nowTick >= effect->runInterval) {
         return LEDSingle_effectState_STOP;
     }
+    /* Tính LED hiện tại */
     uint32_t nextLEDInterval = effect->runInterval / effect->led.count;
     effect->led.now = nowTick / nextLEDInterval;
-    if(effect->dirWipe == true) {
-        drv(effect->led.now, effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
+    if(effect->dirWipe == false) {
+        effect->led.now = effect->led.count - (effect->led.now);
     }
-    else {
-        drv(effect->led.count - (effect->led.now), effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
+    drv(effect->led.now, effect->beginBrightness + (int16_t)(nowTick % nextLEDInterval) * (int16_t)(effect->endBrightness - effect->beginBrightness) / (int16_t)nextLEDInterval);
+    int32_t indexLED = effect->led.now;
+    while(1) {
+        if(effect->dirWipe == false) {
+            indexLED++;
+            if(indexLED >= effect->led.count) {
+                break;
+            }
+        }
+        else {
+            indexLED--;
+            if(indexLED < 0) {
+                break;
+            }
+        }
+        drv(indexLED, effect->endBrightness);
     }
     return LEDSingle_effectState_RUNNING;
 }
@@ -31,6 +46,7 @@ void LEDSingleEffects_fadeWipe_init(
         LEDSingleEffect_tick_t nowTick
     )
 {
+    // printf("Hello eff: %ld\r\n", (uint32_t)effect);
     effect->startTick = nowTick;
     effect->led.count = LEDCount;
     effect->led.now = 0;
