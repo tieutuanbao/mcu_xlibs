@@ -25,16 +25,18 @@ void NRF24_init(
 
     nRF24->setCE_drv(0);
     nRF24->setCS_drv(1);
-    delay(5); // 5ms
+    delay(10); // 5ms
 }
 
 uint8_t nRF24_writeReg(nRF24_t *nRF24, uint8_t reg, uint8_t *buf, uint8_t len) {
     uint8_t status = 0;
     nRF24->setCS_drv(false);
+    delayMicroseconds(5);
     status = nRF24->transferSPI_drv(0x20 | reg);
     while(len--) {
         nRF24->transferSPI_drv(*buf);
         buf++;
+        delayMicroseconds(5);
     }
     nRF24->setCS_drv(true);
     return status;
@@ -43,10 +45,12 @@ uint8_t nRF24_writeReg(nRF24_t *nRF24, uint8_t reg, uint8_t *buf, uint8_t len) {
 uint8_t nRF24_readReg(nRF24_t *nRF24, uint8_t reg, uint8_t *buf, uint8_t len) {
     uint8_t status = 0;
     nRF24->setCS_drv(false);
+    delayMicroseconds(5);
     status = nRF24->transferSPI_drv(reg);
     while(len--) {
         *buf = nRF24->transferSPI_drv(0xFF);
         buf++;
+        delayMicroseconds(5);
     }
     nRF24->setCS_drv(true);
     return status;
@@ -59,13 +63,16 @@ void nRF24_writePayload(nRF24_t *nRF24, uint8_t *pBuf, uint8_t len, uint8_t writ
     }
     /* begin transfer */
     nRF24->setCS_drv(false);
+    delayMicroseconds(5);
     nRF24->transferSPI_drv(writeType);
     while(len--) {
         nRF24->transferSPI_drv(*pBuf);
         pBuf++;
+        delayMicroseconds(5);
     }
     while(blankLength--) {
         nRF24->transferSPI_drv(0);
+        delayMicroseconds(5);
     }
     nRF24->setCS_drv(true);
 }

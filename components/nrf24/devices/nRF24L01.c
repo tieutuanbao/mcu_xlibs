@@ -6,7 +6,7 @@
 
 void nRF24L01_config(nRF24_t *nRF24) {
     nRF24L01_powerDown(nRF24);
-    delayMicroseconds(200);
+    delayMicroseconds(500);
     nRF24L01_setRetries(nRF24, 5, 15);
     nRF24L01_setDataRate(nRF24, nRF24_dataRate_1MBPS);
     nRF24L01_setPALevel(nRF24, nRF24_PA_dbm_LOW);
@@ -398,10 +398,8 @@ nRF24_txResult_t nRF24L01_write(nRF24_t *nRF24, uint8_t *dataBuf, uint8_t dataLe
 
     /* Write payload */
     nRF24_writePayload(nRF24, dataBuf, dataLength, multicast?NRF24L01_REG_W_TX_PAYLOAD_NACK:NRF24L01_REG_W_TX_PAYLOAD);
-    delayMicroseconds(1);
     /* CE HIGH */
     nRF24->setCE_drv(1);
-    delayMicroseconds(1);
     /* Wait until complete or failed */
     tickNow = millis();
     while(1) {
