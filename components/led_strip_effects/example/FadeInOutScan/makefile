@@ -1,0 +1,2 @@
+all:
+	gcc -std=c99 -I../ -I../../ -I../../effects -I../../../../misc ../../../../misc/bits_string.c ../../../../misc/bits_math.c ../../../../misc/color.c ../../LedStrip_color.c ../../LedStrip_effect.c ../../effects/LedStripEffect_FadeInWipe.c ../../effects/LedStripEffect_Fade.c test.c -o test
